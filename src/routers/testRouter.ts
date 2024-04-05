@@ -1,5 +1,7 @@
 import { Request, Response, Router } from 'express';
 import wrapAsync from '../helpers/wrapFunction';
+import {BaseResponseStatus} from '../helpers/baseResponseStatus';
+import response from '../helpers/response';
 
 const router = Router();
 
@@ -8,7 +10,9 @@ const router = Router();
  *  get: /test
  */
 router.get('/', wrapAsync(async (req: Request, res: Response) => {
-  return res.status(200).json({message: '성공'});
+  const responseStatus = BaseResponseStatus.SUCCESS;
+
+  return res.status(responseStatus.status).json(response(responseStatus));
 }));
 
 /**
@@ -16,7 +20,7 @@ router.get('/', wrapAsync(async (req: Request, res: Response) => {
  *  post: /test/zipUpload
  */
 router.post('/zipUpload', wrapAsync(async (req: Request, res: Response) => {
-
+  
 }));
 
 export default router;
