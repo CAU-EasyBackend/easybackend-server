@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import methodOverride from 'method-override';
+import apiRouter from '../routers/apiRouter';
 
 class ExpressServer {
   private app;
@@ -16,6 +17,8 @@ class ExpressServer {
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(cors());
     this.app.use(methodOverride());
+
+    this.app.use('/', apiRouter);
   }
 
   launch() {
