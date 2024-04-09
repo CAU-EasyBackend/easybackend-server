@@ -8,11 +8,7 @@ class TestService {
     const repositoryName = pathParts[1].replace('.git', '');
 
     const git = simpleGit();
-    try {
-      git.clone(repositoryURL, 'copySourceCode/' + username + '/' + repositoryName);
-    } catch(error) {
-      throw error;
-    }
+    await git.clone(repositoryURL, 'copySourceCode/' + username + '/' + repositoryName);
 
     return;
   }
