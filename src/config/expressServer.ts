@@ -1,31 +1,30 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import methodOverride from 'method-override';
 import apiRouter from '../routers/apiRouter';
+import errorHandler from '../helpers/errorHandler';
+import HttpError from '../helpers/httpError';
+import {BaseResponseStatus} from '../helpers/baseResponseStatus';
 
-class ExpressServer {
-  private app;
-  private port;
-  constructor() {
-    this.app = express();
-    this.port = 8080;
-    this.setupMiddleware();
-  }
+function configureExpressApp() {
+  const app = express();
 
-  setupMiddleware() {
-    this.app.use(express.json());
-    this.app.use(express.urlencoded({ extended: true }));
-    this.app.use(cors());
-    this.app.use(methodOverride());
+  // Middleware
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(cors());
+  app.use(methodOverride());
 
-    this.app.use('/', apiRouter);
-  }
+  // Router
+  app.use('/', apiRouter);
 
-  launch() {
-    this.app.listen(this.port, () => {
-      console.log(`Server is running on port ${this.port}`);
-    });
-  }
+  // Error handler
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    throw new HttpError(BaseResponseStatus.NOT_FOUND);
+  });
+  app.use(errorHandler);
+
+  return app;
 }
 
-export default ExpressServer;
+export default configureExpressApp;

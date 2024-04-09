@@ -1,4 +1,10 @@
-import ExpressServer from './config/expressServer';
+import configureEnvironment from './config/environment';
+import configureExpressApp from './config/expressServer';
 
-const expressServer = new ExpressServer();
-expressServer.launch();
+configureEnvironment();
+
+const PORT = process.env.PORT || 80;
+const server = configureExpressApp();
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
