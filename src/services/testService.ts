@@ -9,9 +9,9 @@ class TestService {
 
     const git = simpleGit();
     try {
-      git.clone(repositoryURL, './copySourceCode/' + username + '/' + repositoryName);
+      git.clone(repositoryURL, 'copySourceCode/' + username + '/' + repositoryName);
     } catch(error) {
-      console.error(error);
+      throw error;
     }
 
     return;
