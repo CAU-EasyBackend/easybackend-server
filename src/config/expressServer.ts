@@ -5,6 +5,7 @@ import apiRouter from '../routers/apiRouter';
 import errorHandler from '../helpers/errorHandler';
 import HttpError from '../helpers/httpError';
 import {BaseResponseStatus} from '../helpers/baseResponseStatus';
+import session from 'express-session';
 
 function configureExpressApp() {
   const app = express();
