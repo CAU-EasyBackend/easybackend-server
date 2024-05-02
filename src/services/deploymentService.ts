@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-class TestService {
+class DeploymentService {
   async addDirectoryToZip(zip: JSZip, dirPath: string, basePath: string = '') {
     const files = await fs.readdir(dirPath);
 
@@ -44,4 +44,4 @@ class TestService {
   }
 }
 
-export default new TestService();
+export default new DeploymentService();
