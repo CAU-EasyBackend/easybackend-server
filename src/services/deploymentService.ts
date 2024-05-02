@@ -39,7 +39,7 @@ class DeploymentService {
     const zipPath: string = 'uploads/deploy/' + repositoryName + '.zip';
 
     const git = simpleGit();
-    await git.clone(repositoryURL, 'copySourceCode/' + username + '/' + repositoryName);
+    await git.clone(repositoryURL, dirPath);
     await this.compressFolder(dirPath, zipPath);
   }
 }
