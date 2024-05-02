@@ -21,12 +21,12 @@ class TestService {
     }
   }
 
-  async compressFolder(dirPath: string) {
+  async compressFolder(dirPath: string, zipPath: string) {
     const zip = new JSZip();
     await this.addDirectoryToZip(zip, dirPath);
 
     const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
-    await fs.writeFile(dirPath + '.zip', zipContent);
+    await fs.writeFile(zipPath, zipContent);
   }
 
   async gitClone(repositoryURL: string) {
@@ -35,11 +35,12 @@ class TestService {
     const username = pathParts[0];
     const repositoryName = pathParts[1].replace('.git', '');
 
+    const dirPath: string = 'uploads/deploy/' + username + '/' + repositoryName;
+    const zipPath: string = 'uploads/deploy/' + repositoryName + '.zip';
+
     const git = simpleGit();
     await git.clone(repositoryURL, 'copySourceCode/' + username + '/' + repositoryName);
-    await this.compressFolder('copySourceCode/' + username + '/' + repositoryName);
-
-    return;
+    await this.compressFolder(dirPath, zipPath);
   }
 }
 

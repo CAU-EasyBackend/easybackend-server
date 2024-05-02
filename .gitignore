@@ -135,4 +135,4 @@ dist
 *.crt
 
 #copy source code
-/copySourceCode/
+/uploads/
