@@ -1,7 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 
-const uploadFolder = path.resolve(__dirname, '..', '..', 'uploads');
+const uploadFolder = path.resolve(__dirname, '..', '..', 'copySourceCode');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
