@@ -14,6 +14,7 @@
     "@types/cors": "^2.8.16",
     "@types/express": "^4.17.19",
     "@types/method-override": "^0.0.34",
+    "@types/multer": "^1.4.11",
     "cors": "^2.8.5",
     "cross-env": "^7.0.3",
     "dotenv": "^16.3.1",
