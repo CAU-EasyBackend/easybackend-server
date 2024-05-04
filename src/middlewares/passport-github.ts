@@ -1,5 +1,5 @@
 import passport from 'passport';
-import { Strategy as GithubStrategy } from 'passport-github2';
+import { Strategy as GithubStrategy, Profile } from 'passport-github2';
 import session from 'express-session';
 import { Request, Response, NextFunction } from 'express';
 
@@ -31,23 +31,18 @@ export function configurePassport() {
     clientID: githubClientID,
     clientSecret: githubClientSecret,
     callbackURL: githubCallbackURL,
-  }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
-    console.log(profile);
+  }, async (accessToken: string, refreshToken: string, profile: Profile, done: (err: any, user?: any) => void) => {
+    const githubID = profile.id;
+    done(null, { githubID });
   }));
 
-  /*
   passport.serializeUser((user, done) => {
     done(null, user.id);
   });
 
   passport.deserializeUser(async (id, done) => {
-    try {
-      const user = await User.findById(id);
-      done(null, user);
-    } catch (error) {
-      done(error);
-    }
-  });*/
+    done(null, { id });
+  });
 }
 
 export const ensureAuthenticated = (req: Request, res: Response, next: NextFunction) => {
