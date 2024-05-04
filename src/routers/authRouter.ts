@@ -11,7 +11,23 @@ const router = Router();
  * GITHUB login api
  * get: /auth/login
  */
-router.get('/login', wrapAsync(async (req: Request, res: Response) => {
+router.get('/login', passport.authenticate('github'));
+
+/**
+ * GITHUB callback api
+ * get: /auth/callback
+ */
+router.get('/callback', passport.authenticate('github', { failureRedirect: '/login' }),
+  function(req, res) {
+    res.redirect('/');
+  }
+);
+
+/**
+ * GITHUB login api
+ * get: /auth/login 임시
+ */
+router.get('/login2', wrapAsync(async (req: Request, res: Response) => {
   const githubLoginURL = await AuthService.getGithubLoginURL();
 
   return res.redirect(githubLoginURL);
@@ -19,20 +35,12 @@ router.get('/login', wrapAsync(async (req: Request, res: Response) => {
 
 /**
  * GITHUB callback api
- * get: /auth/callback
+ * get: /auth/callback 임시
  */
-router.get('/callback', wrapAsync(async (req: Request, res: Response) => {
+router.get('/callback2', wrapAsync(async (req: Request, res: Response) => {
   const { code } = req.query;
 
   const user = await AuthService.getGithubUserData(code as string);
 }));
-
-router.get('/login2', passport.authenticate('github'));
-router.get('/callback2',
-  passport.authenticate('github', { failureRedirect: '/login' }),
-  function(req, res) {
-    res.redirect('/');
-  }
-);
 
 export default router;
