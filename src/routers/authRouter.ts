@@ -1,9 +1,9 @@
-import { Request, Response, Router } from 'express';
+import {Request, Response, Router} from 'express';
 import wrapAsync from '../helpers/wrapFunction';
-import {BaseResponseStatus} from '../helpers/baseResponseStatus';
 import AuthService from '../services/authService';
-import response from '../helpers/response';
 import passport from 'passport';
+import {BaseResponseStatus} from '../helpers/baseResponseStatus';
+import response from '../helpers/response';
 
 const router = Router();
 
@@ -18,8 +18,9 @@ router.get('/login', passport.authenticate('github'));
  * get: /auth/callback
  */
 router.get('/callback', passport.authenticate('github', { failureRedirect: '/login' }),
-  function(req, res) {
-    res.redirect('/');
+  (req: Request, res: Response) => {
+    const responseStatus = BaseResponseStatus.SUCCESS;
+    return res.status(responseStatus.status).json(response(responseStatus));
   }
 );
 
