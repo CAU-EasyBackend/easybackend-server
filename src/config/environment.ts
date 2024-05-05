@@ -1,8 +1,7 @@
 import dotenv from 'dotenv';
 
 function configureEnvironment() {
-const environment: string | undefined = process.env.NODE_ENV;
-
+  const environment: string | undefined = process.env.NODE_ENV;
   if (!environment) {
     console.error('Error loading .env file');
     process.exit(1);
