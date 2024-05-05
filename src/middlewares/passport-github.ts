@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as GithubStrategy, Profile } from 'passport-github2';
 import session from 'express-session';
 import { Request, Response, NextFunction } from 'express';
+import User, {IUser} from '../models/User';
 
 export function sessionMiddleware() {
   const session_secret : string | undefined = process.env.SESSION_SECRET;
@@ -32,8 +33,12 @@ export function configurePassport() {
     clientSecret: githubClientSecret,
     callbackURL: githubCallbackURL,
   }, async (accessToken: string, refreshToken: string, profile: Profile, done: (err: any, user?: any) => void) => {
-    const githubID = profile.id;
-    done(null, { githubID });
+    let user: IUser | null = await User.findOne({githubID: profile.id});
+    if(!user) {
+      user = await User.create({githubID: profile.id, username: profile.username});
+    }
+
+    done(null, user);
   }));
 
   passport.serializeUser((user, done) => {
@@ -41,7 +46,8 @@ export function configurePassport() {
   });
 
   passport.deserializeUser(async (id, done) => {
-    done(null, { id });
+    const user = await User.findOne({githubID: id});
+    done(null, user);
   });
 }
 
