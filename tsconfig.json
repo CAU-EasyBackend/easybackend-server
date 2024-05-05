@@ -1,4 +1,7 @@
 {
+  "ts-node": {
+    "files": true,
+  },
   "compilerOptions": {
     "target": "es6",
     "module": "commonjs",
@@ -8,8 +11,8 @@
     "strict": true,
     "skipLibCheck": true,
     "typeRoots": [
+      "./src",
       "./node_modules/@types",
-      "./src/global.d.ts"
     ]
   }
 }

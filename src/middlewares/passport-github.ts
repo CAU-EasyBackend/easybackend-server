@@ -2,7 +2,7 @@ import passport from 'passport';
 import { Strategy as GithubStrategy, Profile } from 'passport-github2';
 import session from 'express-session';
 import { Request, Response, NextFunction } from 'express';
-import User, {IUser} from '../models/User';
+import User, { IUser } from '../models/User';
 
 export function sessionMiddleware() {
   const session_secret : string | undefined = process.env.SESSION_SECRET;
@@ -42,10 +42,10 @@ export function configurePassport() {
   }));
 
   passport.serializeUser((user, done) => {
-    done(null, user.githubID);
+    done(null, user.id);
   });
 
-  passport.deserializeUser(async (id, done) => {
+  passport.deserializeUser(async (id: string, done) => {
     const user = await User.findOne({githubID: id});
     done(null, user);
   });
