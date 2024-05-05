@@ -37,7 +37,7 @@ export function configurePassport() {
   }));
 
   passport.serializeUser((user, done) => {
-    done(null, user.id);
+    done(null, user.githubID);
   });
 
   passport.deserializeUser(async (id, done) => {
