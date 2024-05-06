@@ -4,8 +4,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 class DeploymentService {
-  async deployNewServer(file: Express.Multer.File, username: string){
-    const zipPath: string = file.path;
+  async deployNewServer(zipPath: string, username: string){
     /*
     const instanceIndex = DB에서 해당 username의 유저가 소유한 인스턴스 중 가장 마지막 인스턴스의 인덱스 + 1;
     const instanceName = username + '-' + instanceIndex;
@@ -13,8 +12,7 @@ class DeploymentService {
      */
   }
 
-  async updateServer(file: Express.Multer.File, username: string, instanceName: string){
-    const zipPath: string = file.path;
+  async updateServer(zipPath: string, username: string, instanceName: string){
     /*
     const serverVersion = DB에서 해당 instanceName의 서버 버전 + 1;
     await 배포함수(zipPath, instanceName, serverVersion);
@@ -58,6 +56,8 @@ class DeploymentService {
     const git = simpleGit();
     await git.clone(repositoryURL, dirPath);
     await this.compressFolder(dirPath, zipPath);
+
+    await this.deployNewServer(zipPath, username);
   }
 }
 

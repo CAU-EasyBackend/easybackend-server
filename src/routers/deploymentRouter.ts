@@ -11,15 +11,17 @@ const router = Router();
  *  백엔드 배포 (zip 업로드) api
  *  post: /deployment/zip
  */
-router.post('/zip', upload.single('zipFile'), (req: Request, res: Response) => {
+router.post('/zip', upload.single('zipFile'), wrapAsync(async (req: Request, res: Response) => {
   if(!req.file) {
     const responseStatus = BaseResponseStatus.ERROR;
     return res.status(responseStatus.status).json(response(responseStatus));
   }
+  const zipPath: string = req.file.path;
+  await DeploymentService.deployNewServer(zipPath, 'username');
 
   const responseStatus = BaseResponseStatus.SUCCESS;
   return res.status(responseStatus.status).json(response(responseStatus));
-});
+}));
 
 /**
  *  백엔드 배포 (github repository clone) api
