@@ -4,6 +4,23 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 class DeploymentService {
+  async deployNewServer(file: Express.Multer.File, username: string){
+    const zipPath: string = file.path;
+    /*
+    const instanceIndex = DB에서 해당 username의 유저가 소유한 인스턴스 중 가장 마지막 인스턴스의 인덱스 + 1;
+    const instanceName = username + '-' + instanceIndex;
+    await 배포함수(zipPath, instanceName, 1);
+     */
+  }
+
+  async updateServer(file: Express.Multer.File, username: string, instanceName: string){
+    const zipPath: string = file.path;
+    /*
+    const serverVersion = DB에서 해당 instanceName의 서버 버전 + 1;
+    await 배포함수(zipPath, instanceName, serverVersion);
+     */
+  }
+
   async addDirectoryToZip(zip: JSZip, dirPath: string, basePath: string = '') {
     const files = await fs.readdir(dirPath);
 
