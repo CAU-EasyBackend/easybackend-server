@@ -3,6 +3,10 @@ import { Strategy as GithubStrategy, Profile } from 'passport-github2';
 import session from 'express-session';
 import { Request, Response, NextFunction } from 'express';
 import User, { IUser } from '../models/User';
+import createMemoryStore from 'memorystore';
+
+const MemoryStore = createMemoryStore(session);
+const sessionExpireTime = 3600000;
 
 export function sessionMiddleware() {
   const session_secret : string | undefined = process.env.SESSION_SECRET;
@@ -14,7 +18,13 @@ export function sessionMiddleware() {
   return session({
     secret: session_secret,
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    store: new MemoryStore({
+      checkPeriod: sessionExpireTime,
+    }),
+    cookie: {
+      maxAge: sessionExpireTime,
+    },
   });
 }
 
@@ -26,27 +36,33 @@ export function configurePassport() {
     console.error('Error loading .env file');
     process.exit(1);
   }
-  const githubCallbackURL = `${serverURL}/auth/callback`;
+  const githubCallbackURL: string = `${serverURL}/auth/callback`;
 
   passport.use(new GithubStrategy({
     clientID: githubClientID,
     clientSecret: githubClientSecret,
     callbackURL: githubCallbackURL,
-  }, async (accessToken: string, refreshToken: string, profile: Profile, done: (err: any, user?: any) => void) => {
-    let user: IUser | null = await User.findOne({githubID: profile.id});
+    scope: ['repo'],
+  }, async (accessToken: string, refreshToken: string, profile: Profile, done: (err: any, user?: Express.User) => void) => {
+    let user: Express.User | null = await User.findOne({githubID: profile.id});
     if(!user) {
       user = await User.create({githubID: profile.id, username: profile.username});
     }
+    user.accessToken = accessToken;
 
     done(null, user);
   }));
 
-  passport.serializeUser((user, done) => {
-    done(null, user.id);
+  passport.serializeUser((user: Express.User , done) => {
+    done(null, {
+      _id: user._id,
+      githubID: user.githubID,
+      username: user.username,
+      accessToken: user.accessToken,
+    });
   });
 
-  passport.deserializeUser(async (id: string, done) => {
-    const user = await User.findOne({githubID: id});
+  passport.deserializeUser(async (user: Express.User, done) => {
     done(null, user);
   });
 }
