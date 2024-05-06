@@ -46,7 +46,7 @@ export function configurePassport() {
   });
 
   passport.deserializeUser(async (id: string, done) => {
-    const user = await User.findOne({githubID: id});
+    const user = await User.findById(id);
     done(null, user);
   });
 }

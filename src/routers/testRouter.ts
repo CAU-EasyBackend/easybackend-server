@@ -26,4 +26,23 @@ router.get('/auth', isAuthenticated, wrapAsync(async (req: Request, res: Respons
   return res.status(responseStatus.status).json(response(responseStatus));
 }));
 
+/**
+ *  test auth api
+ *  get: /test/auth/userInfo
+ */
+router.get('/auth/userInfo', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  if(!user) {
+    const responseStatus = BaseResponseStatus.ERROR;
+    return res.status(responseStatus.status).json(response(responseStatus));
+  } else {
+    const userInfo = {
+      githubID: user.githubID,
+      username: user.username
+    }
+    const responseStatus = BaseResponseStatus.SUCCESS;
+    return res.status(responseStatus.status).json(response(responseStatus, userInfo));
+  }
+}));
+
 export default router;
