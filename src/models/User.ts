@@ -1,12 +1,12 @@
 import { Document, Schema, model } from 'mongoose';
 
 export interface IUser extends Document {
-  githubID: string;
+  userId: string;
   username: string;
 }
 
 const userSchema: Schema = new Schema({
-  githubID: { type: String, required: true, unique: true },
+  userId: { type: String, required: true, unique: true },
   username: { type: String, required: true },
 });
 

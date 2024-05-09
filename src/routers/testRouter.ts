@@ -37,7 +37,7 @@ router.get('/auth/userInfo', isAuthenticated, wrapAsync(async (req: Request, res
     return res.status(responseStatus.status).json(response(responseStatus));
   } else {
     const userInfo = {
-      githubID: user.githubID,
+      userId: user.userId,
       username: user.username,
       accessToken: user.accessToken,
     }

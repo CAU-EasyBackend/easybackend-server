@@ -20,25 +20,25 @@ router.post('/new/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(asy
   const zipPath: string = req.file.path;
 
   const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
-  const result = await DeploymentService.deployNewServer(req.user!.username, zipPath);
+  const result = await DeploymentService.deployNewServer(req.user!.userId, zipPath);
 
   return res.status(responseStatus.status).json(response(responseStatus, result));
 }));
 
 /**
  *  백엔드 업데이트 (zip 업로드) api
- *  post: /deployment/:instanceID/update/zip
+ *  post: /deployment/:instanceId/update/zip
  */
-router.patch('/:instanceID/update/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(async (req: Request, res: Response) => {
+router.patch('/:instanceId/update/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(async (req: Request, res: Response) => {
   if(!req.file) {
     const responseStatus = BaseResponseStatus.ZIP_UPLOAD_ERROR;
     return res.status(responseStatus.status).json(response(responseStatus));
   }
-  const instanceID: string = req.params.instanceID;
+  const instanceId: string = req.params.instanceId;
   const zipPath: string = req.file.path;
 
   const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
-  const result = await DeploymentService.updateServer(req.user!.username, instanceID, zipPath);
+  const result = await DeploymentService.updateServer(req.user!.userId, instanceId, zipPath);
 
   return res.status(responseStatus.status).json(response(responseStatus, result));
 }));
@@ -52,23 +52,23 @@ router.post('/new/github', isAuthenticated, wrapAsync(async (req: Request, res: 
   const { repositoryURL } = req.body;
 
   const responseStatus = BaseResponseStatus.SUCCESS;
-  const result = await DeploymentService.gitCloneDeploy(req.user!.username, null, repositoryURL);
+  const result = await DeploymentService.gitCloneDeploy(req.user!.userId, null, repositoryURL);
 
   return res.status(responseStatus.status).json(response(responseStatus, result));
 }));
 
 /**
  *  백엔드 업데이트 (github repository clone) api
- *  post: /deployment/:instanceID/update/github
+ *  post: /deployment/:instanceId/update/github
  *  params: instanceID
  *  body: repositoryURL
  */
-router.patch('/:instanceID/update/zip', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
-  const instanceID: string = req.params.instanceID
+router.patch('/:instanceId/update/zip', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const instanceId: string = req.params.instanceId
   const { repositoryURL } = req.body;
 
   const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
-  const result = await DeploymentService.gitCloneDeploy(req.user!.username, instanceID, repositoryURL);
+  const result = await DeploymentService.gitCloneDeploy(req.user!.userId, instanceId, repositoryURL);
 
   return res.status(responseStatus.status).json(response(responseStatus, result));
 }));

@@ -4,7 +4,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 class DeploymentService {
-  async deployNewServer(username: string, zipPath: string){
+  async deployNewServer(userId: string, zipPath: string){
     /*
     const instanceIndex = DB에서 해당 username의 유저가 소유한 인스턴스 중 가장 마지막 인스턴스의 인덱스 + 1;
     const instanceName = username + '-' + instanceIndex;
@@ -12,14 +12,14 @@ class DeploymentService {
      */
   }
 
-  async updateServer(username: string, instanceID: string, zipPath: string){
+  async updateServer(userId: string, instanceId: string, zipPath: string){
     /*
     const serverVersion = DB에서 해당 instanceName의 서버 버전 + 1;
     await 배포함수(zipPath, instanceName, serverVersion);
      */
   }
 
-  async gitCloneDeploy(username: string, instanceID: string | null, repositoryURL: string) {
+  async gitCloneDeploy(userId: string, instanceId: string | null, repositoryURL: string) {
     const parsedURL = new URL(repositoryURL);
     const pathParts = parsedURL.pathname.split('/').filter((part) => part !== '');
     const repositoryUsername = pathParts[0];
@@ -32,10 +32,10 @@ class DeploymentService {
     await git.clone(repositoryURL, dirPath);
     await this.compressFolder(dirPath, zipPath);
 
-    if(instanceID) {
-      await this.updateServer(username, instanceID, zipPath);
+    if(instanceId) {
+      await this.updateServer(userId, instanceId, zipPath);
     } else {
-      await this.deployNewServer(username, zipPath);
+      await this.deployNewServer(userId, zipPath);
     }
   }
 
