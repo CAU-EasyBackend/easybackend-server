@@ -8,7 +8,7 @@ const router = Router();
 
 /**
  *  test api
- *  get: /test
+ *  get: /tests
  */
 router.get('/', wrapAsync(async (req: Request, res: Response) => {
   const responseStatus = BaseResponseStatus.SUCCESS;
@@ -18,7 +18,7 @@ router.get('/', wrapAsync(async (req: Request, res: Response) => {
 
 /**
  *  test auth api
- *  get: /test/auth
+ *  get: /tests/auth
  */
 router.get('/auth', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
   const responseStatus = BaseResponseStatus.SUCCESS;
@@ -28,7 +28,7 @@ router.get('/auth', isAuthenticated, wrapAsync(async (req: Request, res: Respons
 
 /**
  *  test auth api
- *  get: /test/auth/userInfo
+ *  get: /tests/auth/userInfo
  */
 router.get('/auth/userInfo', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
   const user = req.user;

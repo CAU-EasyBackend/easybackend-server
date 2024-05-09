@@ -9,7 +9,7 @@ import ServerVersion from '../models/ServerVersion';
 import HttpError from '../helpers/httpError';
 import {BaseResponseStatus} from '../helpers/baseResponseStatus';
 
-class DeploymentService {
+class DeploymentsService {
   async deployNewServer(userId: string, zipPath: string){
     const username: string = (await User.findOne({ userId }))!.username;
 
@@ -130,4 +130,4 @@ class DeploymentService {
   }
 }
 
-export default new DeploymentService();
+export default new DeploymentsService();
