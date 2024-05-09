@@ -4,37 +4,73 @@ import {BaseResponseStatus} from '../helpers/baseResponseStatus';
 import response from '../helpers/response';
 import wrapAsync from '../helpers/wrapFunction';
 import DeploymentService from '../services/deploymentService';
+import {isAuthenticated} from '../middlewares/passport-github';
 
 const router = Router();
 
 /**
  *  백엔드 배포 (zip 업로드) api
- *  post: /deployment/zip
+ *  post: /deployment/new/zip
  */
-router.post('/zip', upload.single('zipFile'), wrapAsync(async (req: Request, res: Response) => {
+router.post('/new/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(async (req: Request, res: Response) => {
   if(!req.file) {
-    const responseStatus = BaseResponseStatus.ERROR;
+    const responseStatus = BaseResponseStatus.ZIP_UPLOAD_ERROR;
     return res.status(responseStatus.status).json(response(responseStatus));
   }
   const zipPath: string = req.file.path;
-  await DeploymentService.deployNewServer(zipPath, 'username');
 
-  const responseStatus = BaseResponseStatus.SUCCESS;
-  return res.status(responseStatus.status).json(response(responseStatus));
+  const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
+  const result = await DeploymentService.deployNewServer(req.user!.username, zipPath);
+
+  return res.status(responseStatus.status).json(response(responseStatus, result));
+}));
+
+/**
+ *  백엔드 업데이트 (zip 업로드) api
+ *  post: /deployment/:instanceID/update/zip
+ */
+router.patch('/:instanceID/update/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(async (req: Request, res: Response) => {
+  if(!req.file) {
+    const responseStatus = BaseResponseStatus.ZIP_UPLOAD_ERROR;
+    return res.status(responseStatus.status).json(response(responseStatus));
+  }
+  const instanceID: string = req.params.instanceID;
+  const zipPath: string = req.file.path;
+
+  const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
+  const result = await DeploymentService.updateServer(req.user!.username, instanceID, zipPath);
+
+  return res.status(responseStatus.status).json(response(responseStatus, result));
 }));
 
 /**
  *  백엔드 배포 (github repository clone) api
- *  post: /deployment/github
+ *  post: /deployment/new/github
  *  body: repositoryURL
  */
-router.post('/github', wrapAsync(async (req: Request, res: Response) => {
+router.post('/new/github', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
   const { repositoryURL } = req.body;
 
-  const gitCloneResponse = await DeploymentService.gitClone(repositoryURL);
   const responseStatus = BaseResponseStatus.SUCCESS;
+  const result = await DeploymentService.gitCloneDeploy(req.user!.username, null, repositoryURL);
 
-  return res.status(responseStatus.status).json(response(responseStatus, gitCloneResponse));
+  return res.status(responseStatus.status).json(response(responseStatus, result));
+}));
+
+/**
+ *  백엔드 업데이트 (github repository clone) api
+ *  post: /deployment/:instanceID/update/github
+ *  params: instanceID
+ *  body: repositoryURL
+ */
+router.patch('/:instanceID/update/zip', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const instanceID: string = req.params.instanceID
+  const { repositoryURL } = req.body;
+
+  const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
+  const result = await DeploymentService.gitCloneDeploy(req.user!.username, instanceID, repositoryURL);
+
+  return res.status(responseStatus.status).json(response(responseStatus, result));
 }));
 
 export default router;
