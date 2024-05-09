@@ -1,7 +1,7 @@
-import { Document, Schema, model } from 'mongoose';
+import { Document, Types, Schema, model } from 'mongoose';
 
 export interface IServer extends Document {
-  instanceId: string;
+  instanceId: Types.ObjectId;
   serverName: string;
   runningVersion: number;
   latestVersion: number;
@@ -9,11 +9,11 @@ export interface IServer extends Document {
 }
 
 const serverSchema: Schema = new Schema({
-  instanceId: { type: String, required: true },
+  instanceId: { type: Schema.Types.ObjectId, required: true, ref: 'Instance' },
   serverName: { type: String, required: true },
   runningVersion: { type: Number, required: true },
   latestVersion: { type: Number, required: true },
-  port: { type: Number, required: true },
+  port: { type: Number },
 });
 
 const Server = model<IServer>('Server', serverSchema);

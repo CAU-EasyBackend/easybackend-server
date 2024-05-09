@@ -1,16 +1,16 @@
-import { Document, Schema, model } from 'mongoose';
+import { Document, Types, Schema, model } from 'mongoose';
 
 export interface IServerVersion extends Document {
-  serverId: string;
+  serverId: Types.ObjectId;
   version: number;
   port: number;
   description: string;
 }
 
 const serverVersionSchema: Schema = new Schema({
-  serverId: { type: String, required: true },
+  serverId: { type: Schema.Types.ObjectId, required: true, ref: 'Server' },
   version: { type: Number, required: true },
-  port: { type: Number, required: true },
+  port: { type: Number },
   description: { type: String },
 });
 
