@@ -1,12 +1,14 @@
 import { Router } from 'express';
-import authRouter from './authRouter';
-import deploymentRouter from './deploymentRouter';
-import testRouter from './testRouter';
+import authsRouter from './authsRouter';
+import deploymentsRouter from './deploymentsRouter';
+import testsRouter from './testsRouter';
+import usersRouter from './users/usersRouter';
 
 const router = Router();
 
-router.use('/auth', authRouter);
-router.use('/deployment', deploymentRouter);
-router.use('/test', testRouter);
+router.use('/users', usersRouter);
+router.use('/auths', authsRouter);
+router.use('/deployments', deploymentsRouter);
+router.use('/tests', testsRouter);
 
 export default router;

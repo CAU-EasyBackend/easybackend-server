@@ -24,7 +24,7 @@ function configureExpressApp() {
   app.use(methodOverride());
 
   // Router
-  app.use('/', apiRouter);
+  app.use('/api', apiRouter);
 
   // Error handler
   app.use((req: Request, res: Response, next: NextFunction) => {

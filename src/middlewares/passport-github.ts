@@ -36,7 +36,7 @@ export function configurePassport() {
     console.error('Error loading .env file');
     process.exit(1);
   }
-  const githubCallbackURL: string = `${serverURL}/auth/callback`;
+  const githubCallbackURL: string = `${serverURL}/api/auths/callback`;
 
   passport.use(new GithubStrategy({
     clientID: githubClientID,
@@ -44,9 +44,9 @@ export function configurePassport() {
     callbackURL: githubCallbackURL,
     scope: ['repo'],
   }, async (accessToken: string, refreshToken: string, profile: Profile, done: (err: any, user?: Express.User) => void) => {
-    let user: Express.User | null = await User.findOne({githubID: profile.id});
+    let user: Express.User | null = await User.findOne({userId: profile.id});
     if(!user) {
-      user = await User.create({githubID: profile.id, username: profile.username});
+      user = await User.create({userId: profile.id, username: profile.username});
     }
     user.accessToken = accessToken;
 
@@ -56,7 +56,7 @@ export function configurePassport() {
   passport.serializeUser((user: Express.User , done) => {
     done(null, {
       _id: user._id,
-      githubID: user.githubID,
+      userId: user.userId,
       username: user.username,
       accessToken: user.accessToken,
     });
