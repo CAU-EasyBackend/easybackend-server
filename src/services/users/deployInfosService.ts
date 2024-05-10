@@ -4,43 +4,68 @@ import ServerVersion, {IServerVersion} from '../../models/ServerVersion';
 
 class DeployInfosService {
   async getStatusAll(userId: string) {
-    const instanceList: IInstance[] = await this.getInstanceList(userId);
+    const result = [];
+    const instances = await this.getInstanceList(userId);
 
-    return await Promise.all(instanceList.map(async (instance) => {
-      const serverList: IServer[] = await this.getServerList(instance._id);
+    for(const instance of instances.instances) {
+      const serverList = [];
+      const servers = await this.getServerList(instance.instanceId);
 
-      const serverWithVersions = await Promise.all(serverList.map(async (server) => {
-        const serverVersionList: IServerVersion[] = await this.getServerVersionList(server._id);
+      for(const server of servers.servers) {
+        const versionList = [];
+        const serverVersions = await this.getServerVersionList(server.serverId);
 
-        return {
-          serverName: server.serverName,
-          serverVersionList,
-        };
-      }));
-
-      return {
-        instanceName: instance.instanceName,
-        serverWithVersions,
-      };
-    }));
+        for(const version of serverVersions.serverVersions) {
+          versionList.push(version);
+        }
+        serverList.push({
+          server,
+          serverVersions: versionList,
+        });
+      }
+      result.push({
+        instance,
+        servers: serverList,
+      });
+    }
+    return { instances: result };
   }
 
   async getInstanceList(userId: string) {
     const instanceList: IInstance[] = await Instance.find({ ownerUserId: userId }).sort({ instanceNumber: 1 }).exec();
+    const instances = await Promise.all(instanceList.map(async (instance) => ({
+      instanceId: instance._id,
+      instanceName: instance.instanceName,
+      instanceNumber: instance.instanceNumber,
+      status: instance.status,
+      IP: instance.IP,
+    })));
 
-    return instanceList;
+    return { instances };
   }
 
   async getServerList(instanceId: string) {
     const serverList: IServer[] = await Server.find({ instanceId });
+    const servers = await Promise.all(serverList.map(async (server) => ({
+      serverId: server._id,
+      serverName: server.serverName,
+      runningVersion: server.runningVersion,
+      latestVersion: server.latestVersion,
+      port: server.port,
+    })));
 
-    return serverList;
+    return { servers };
   }
 
   async getServerVersionList(serverId: string) {
     const serverVersionList: IServerVersion[] = await ServerVersion.find({ serverId }).sort({ version: 1 }).exec();
+    const serverVersions = serverVersionList.map((serverVersion) => ({
+      version: serverVersion.version,
+      port: serverVersion.port,
+      description: serverVersion.description,
+    }));
 
-    return serverVersionList;
+    return { serverVersions };
   }
 }
 

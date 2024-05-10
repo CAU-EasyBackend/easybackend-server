@@ -36,7 +36,7 @@ export function configurePassport() {
     console.error('Error loading .env file');
     process.exit(1);
   }
-  const githubCallbackURL: string = `${serverURL}/auth/callback`;
+  const githubCallbackURL: string = `${serverURL}/api/auths/callback`;
 
   passport.use(new GithubStrategy({
     clientID: githubClientID,
