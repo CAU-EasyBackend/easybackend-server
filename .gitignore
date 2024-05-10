@@ -136,3 +136,15 @@ dist
 
 #copy source code
 /copySourceCode/
+
+#pem
+*.pem
+
+#zip
+*.zip
+
+#terraform
+*.tfstate
+*.backup
+.terraform/
+
