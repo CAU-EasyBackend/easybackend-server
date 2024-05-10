@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import wrapAsync from '../helpers/wrapFunction';
 import {BaseResponseStatus} from '../helpers/baseResponseStatus';
 import response from '../helpers/response';
-import TestService from '../services/testService';
+import {isAuthenticated} from '../middlewares/passport-github';
 
 const router = Router();
 
@@ -17,25 +17,33 @@ router.get('/', wrapAsync(async (req: Request, res: Response) => {
 }));
 
 /**
- *  zip 압축 소스코드 업로드 test api
- *  post: /test/zipUpload
+ *  test auth api
+ *  get: /test/auth
  */
-router.post('/zipUpload', wrapAsync(async (req: Request, res: Response) => {
+router.get('/auth', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const responseStatus = BaseResponseStatus.SUCCESS;
 
+  return res.status(responseStatus.status).json(response(responseStatus));
 }));
 
 /**
- *  git clone test api
- *  post: /test/clone
- *  body: repositoryURL
+ *  test auth api
+ *  get: /test/auth/userInfo
  */
-router.post('/clone', wrapAsync(async (req: Request, res: Response) => {
-  const { repositoryURL } = req.body;
-
-  const gitCloneResponse = await TestService.gitClone(repositoryURL);
-  const responseStatus = BaseResponseStatus.SUCCESS;
-
-  return res.status(responseStatus.status).json(response(responseStatus, gitCloneResponse));
+router.get('/auth/userInfo', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  if(!user) {
+    const responseStatus = BaseResponseStatus.ERROR;
+    return res.status(responseStatus.status).json(response(responseStatus));
+  } else {
+    const userInfo = {
+      githubID: user.githubID,
+      username: user.username,
+      accessToken: user.accessToken,
+    }
+    const responseStatus = BaseResponseStatus.SUCCESS;
+    return res.status(responseStatus.status).json(response(responseStatus, userInfo));
+  }
 }));
 
 export default router;

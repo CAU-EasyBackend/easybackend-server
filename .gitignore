@@ -148,3 +148,4 @@ dist
 *.backup
 .terraform/
 
+/uploads/
