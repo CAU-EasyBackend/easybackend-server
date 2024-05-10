@@ -10,7 +10,7 @@ const router = Router();
 
 /**
  *  백엔드 배포 (zip 업로드) api
- *  post: /deployments/new/zip
+ *  post: /api/deployments/new/zip
  */
 router.post('/new/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(async (req: Request, res: Response) => {
   if(!req.file) {
@@ -27,7 +27,7 @@ router.post('/new/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(asy
 
 /**
  *  백엔드 업데이트 (zip 업로드) api
- *  post: /deployments/:instanceId/update/zip
+ *  post: /api/deployments/:instanceId/update/zip
  */
 router.patch('/:instanceId/update/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(async (req: Request, res: Response) => {
   if(!req.file) {
@@ -45,7 +45,7 @@ router.patch('/:instanceId/update/zip', isAuthenticated, upload.single('zipFile'
 
 /**
  *  백엔드 배포 (github repository clone) api
- *  post: /deployments/new/github
+ *  post: /api/deployments/new/github
  *  body: repositoryURL
  */
 router.post('/new/github', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
@@ -59,7 +59,7 @@ router.post('/new/github', isAuthenticated, wrapAsync(async (req: Request, res: 
 
 /**
  *  백엔드 업데이트 (github repository clone) api
- *  post: /deployments/:instanceId/update/github
+ *  post: /api/deployments/:instanceId/update/github
  *  params: instanceID
  *  body: repositoryURL
  */

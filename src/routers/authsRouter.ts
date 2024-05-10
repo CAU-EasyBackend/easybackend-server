@@ -7,13 +7,13 @@ const router = Router();
 
 /**
  * GITHUB login api
- * get: /auths/login
+ * get: /api/auths/login
  */
 router.get('/login', passport.authenticate('github'));
 
 /**
  * GITHUB callback api
- * get: /auths/callback
+ * get: /api/auths/callback
  */
 router.get('/callback', passport.authenticate('github', { failureRedirect: '/login' }),
   (req: Request, res: Response) => {

@@ -8,8 +8,8 @@ import response from '../../helpers/response';
 const router = Router({ mergeParams: true });
 
 /**
- * 서버 배포 정보 조회 api
- * get: /users/:userId/deployInfos/statusAll
+ * 서버 배포 정보 종합 조회 api
+ * get: /api/users/:userId/deployInfos/statusAll
  * params: userId
  */
 router.get('/statusAll', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
