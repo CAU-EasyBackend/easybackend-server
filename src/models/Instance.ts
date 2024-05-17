@@ -13,7 +13,7 @@ const instanceSchema: Schema = new Schema({
   instanceNumber: { type: Number, required: true },
   ownerUserId: { type: String, required: true, ref: 'User' },
   status: { type: String, required: true },
-  IP: { type: String},
+  IP: { type: String },
 });
 
 const Instance = model<IInstance>('Instance', instanceSchema);

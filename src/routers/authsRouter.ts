@@ -17,8 +17,12 @@ router.get('/login', passport.authenticate('github'));
  */
 router.get('/callback', passport.authenticate('github', { failureRedirect: '/login' }),
   (req: Request, res: Response) => {
-    const responseStatus = BaseResponseStatus.SUCCESS;
-    return res.status(responseStatus.status).json(response(responseStatus));
+    const frontEndURL: string | undefined = process.env.FRONTEND_URL;
+    if(!frontEndURL) {
+      const responseStatus = BaseResponseStatus.ERROR;
+      return res.status(responseStatus.status).json(response(responseStatus));
+    }
+    res.redirect(frontEndURL);
   }
 );
 
