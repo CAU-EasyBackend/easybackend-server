@@ -20,7 +20,16 @@ function configureExpressApp() {
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  app.use(cors());
+
+  const frontEndURL: string | undefined = process.env.FRONTEND_URL;
+  if(!frontEndURL) {
+    console.error('Error loading .env file');
+    process.exit(1);
+  }
+  app.use(cors({
+    origin: frontEndURL,
+    credentials: true,
+  }));
   app.use(methodOverride());
 
   // Router

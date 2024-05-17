@@ -4,6 +4,7 @@ import session from 'express-session';
 import { Request, Response, NextFunction } from 'express';
 import User, { IUser } from '../models/User';
 import createMemoryStore from 'memorystore';
+import MongoStore from 'connect-mongo';
 
 const MemoryStore = createMemoryStore(session);
 const sessionExpireTime = 3600000;
@@ -13,6 +14,28 @@ export function sessionMiddleware() {
   if(!session_secret) {
     console.error('Error loading .env file');
     process.exit(1);
+  }
+
+  const session_store: string | undefined = process.env.SESSION_STORE;
+  if(session_store === 'mongodb') {
+    const mongodb_URI : string | undefined = process.env.MONGODB_URI;
+    if(!mongodb_URI) {
+      console.error('Error loading .env file');
+      process.exit(1);
+    }
+
+    return session({
+      secret: session_secret,
+      resave: false,
+      saveUninitialized: false,
+      store: MongoStore.create({
+        mongoUrl: mongodb_URI,
+        ttl: sessionExpireTime / 1000,
+      }),
+      cookie: {
+        maxAge: sessionExpireTime,
+      },
+    });
   }
 
   return session({
@@ -71,5 +94,5 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
   if(req.isAuthenticated()) {
     return next();
   }
-  res.redirect('/auth/login');
+  res.redirect('/api/auths/login');
 }
