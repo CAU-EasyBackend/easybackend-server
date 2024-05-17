@@ -1,7 +1,13 @@
-import { exec } from 'child_process';
+import { exec,spawn } from 'child_process';
 import * as fs from 'fs';
 
 class DeployService {
+    private instanceName = 'gwaktt';
+    private ami = 'ami-01ed8ade75d4eee2f';
+    private instanceType = 't2.micro';
+    private privateKeyPath = 'cicd_key.pem';
+
+
     createTerraformConfig(instanceName: string, ami: string, instanceType: string): Promise<void> {
         return new Promise((resolve, reject) => {
             const config = `
@@ -96,41 +102,65 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
 
     executeSetupCommand(instanceIp: string, privateKeyPath: string): Promise<string> {
         return new Promise((resolve, reject) => {
-            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp}  "sudo DEBIAN_FRONTEND=noninteractive apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y zip unzip && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y npm && ls ~/`;
+            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "export DEBIAN_FRONTEND=noninteractive && sudo apt-get update && sudo apt-get install -y zip unzip && curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash - && sudo apt-get install -y nodejs && ls ~/"`;
             exec(sshCommand, (error, stdout, stderr) => {
                 if (error) {
                     reject(error);
                     return;
                 }
-                if (stderr) {
-                    reject(new Error(stderr));
-                    return;
+                if (stderr && !stderr.includes("Permanently added")) {
+                    console.warn(`stderr: ${stderr}`);
                 }
                 resolve(stdout);
             });
         });
     }
 
-    executeSCPCommand(instanceIp:string, localFilePath: string, remoteFilePath: string, privateKeyPath: string): Promise<string> {
+    executeKeyModCommand(privateKeyPath: string): Promise<string> {
         return new Promise((resolve, reject) => {
-            const icaclsCommand = `icacls "${privateKeyPath}" /reset && icacls "${privateKeyPath}" /grant:r "%USERNAME%:R" && icacls "${privateKeyPath}" /inheritance:r`; //윈도우 실행환경의 경우
-            const chmodCommand=`null`; //ubuntu version
-            const scpCommand = ` && scp -i ${privateKeyPath} -o StrictHostKeyChecking=no ${localFilePath} ubuntu@${instanceIp}:${remoteFilePath}`;
-            exec(icaclsCommand + scpCommand, (error, stdout, stderr) => {
+            // 환경에 따라 적절한 권한 설정 명령을 선택합니다.
+            const isWindows = process.platform === 'win32';
+            const icaclsCommand = isWindows ? `icacls "${privateKeyPath}" /reset && icacls "${privateKeyPath}" /grant:r "%USERNAME%:R" && icacls "${privateKeyPath}" /inheritance:r` : '';
+            const chmodCommand = !isWindows ? `chmod 600 "${privateKeyPath}"` : '';
+            
+            // scp 명령을 구성합니다.
+            const scpCommand = `${isWindows ? icaclsCommand : chmodCommand}`;
+            
+            // 명령을 실행합니다.
+            exec(scpCommand, (error, stdout, stderr) => {
                 if (error) {
                     reject(error);
                     return;
                 }
                 if (stderr && !stderr.includes("Permanently added")) {
-                    reject(new Error(stderr));
-                    return;
+                    console.warn(`stderr: ${stderr}`);
                 }
                 resolve(stdout);
             });
         });
     }
 
-    executeUnzipAndListFiles(instanceIp:string,zipFilePath: string, targetDirectory: string, privateKeyPath: string): Promise<string> {
+    executeSCPCommand(instanceIp: string, localFilePath: string, remoteFilePath: string, privateKeyPath: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+           // const icaclsCommand = `icacls "${privateKeyPath}" /reset && icacls "${privateKeyPath}" /grant:r "%USERNAME%:R" && icacls "${privateKeyPath}" /inheritance:r`; // 윈도우 실행환경의 경우
+           // const chmodCommand = `null`; // ubuntu version
+            const scpCommand = `scp -i ${privateKeyPath} -o StrictHostKeyChecking=no ${localFilePath} ubuntu@${instanceIp}:${remoteFilePath}`;
+            exec(scpCommand, (error, stdout, stderr) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+                if (stderr && !stderr.includes("Permanently added")) {
+                    console.warn(`stderr: ${stderr}`);
+                }
+                resolve(stdout);
+            });
+        });
+    }
+
+
+
+    executeUnzipAndListFiles(instanceIp: string, zipFilePath: string, targetDirectory: string, privateKeyPath: string): Promise<string> {
         return new Promise((resolve, reject) => {
             const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "unzip -o ${zipFilePath} -d ${targetDirectory} && ls ${targetDirectory}"`;
             exec(sshCommand, (error, stdout, stderr) => {
@@ -138,6 +168,55 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
                     reject(error);
                     return;
                 }
+                if (stderr && !stderr.includes("Permanently added")) {
+                    console.warn(`stderr: ${stderr}`);
+                }
+                resolve(stdout);
+            });
+        });
+    }
+
+    executeStartCommand(instanceIp: string, privateKeyPath: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "npm start"`;
+            const child = spawn(sshCommand, { shell: true });
+
+            let stdoutBuffer = '';
+            let stderrBuffer = '';
+
+            child.stdout.on('data', (data) => {
+                const output = data.toString();
+                stdoutBuffer += output;
+                console.log(`stdout: ${output}`);
+                if (stdoutBuffer.includes('Listening on port 8080')) {
+                    resolve();
+                }
+            });
+
+            child.stderr.on('data', (data) => {
+                const output = data.toString();
+                stderrBuffer += output;
+                console.error(`stderr: ${output}`);
+            });
+
+            child.on('close', (code) => {
+                if (code !== 0) {
+                    reject(new Error(`Command failed with code ${code}`));
+                } else if (!stdoutBuffer.includes('Listening on port 8080')) {
+                    reject(new Error('Server did not start correctly.'));
+                }
+            });
+        });
+    }
+
+    executeVersionNameChangeCommand(instanceIp: string, version:number, fileName:string,privateKeyPath: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "sudo mv ${fileName}.zip ${fileName}ver${version}.zip"`;
+            exec(sshCommand, (error, stdout, stderr) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
                 if (stderr) {
                     reject(new Error(stderr));
                     return;
@@ -147,70 +226,71 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
         });
     }
 
-    // startNodeApp(instanceIp: string, privateKeyPath: string): Promise<string> {
-    //     return new Promise((resolve, reject) => {
-    //         const sshCommand = `
-    //             ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "
-    //                 # package.json 파일을 찾습니다.
-    //                 DIRECTORY=\$(find / -type f -name 'package.json' 2>/dev/null)
-    //                 # 찾은 디렉토리로 이동합니다.
-    //                 if [ -z \\"\$DIRECTORY\\" ]; then
-    //                     echo 'package.json not found'
-    //                     exit 1
-    //                 fi
-    //                 CD_DIR=\$(dirname \$DIRECTORY)
-    //                 cd \$CD_DIR
-    //                 # npm start 명령을 실행합니다.
-    //                 npm start
-    //             "
-    //         `;
-    //         exec(sshCommand, (error, stdout, stderr) => {
-    //             if (error) {
-    //                 reject(error);
-    //                 return;
-    //             }
-    //             if (stderr) {
-    //                 reject(new Error(stderr));
-    //                 return;
-    //             }
-    //             resolve(stdout);
-    //         });
-    //     });
-    // }
+    executeClosePortCommand(instanceIp: string,privateKeyPath: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "sudo lsof -t -i :8080 | xargs sudo kill -9"`;
+            exec(sshCommand, (error, stdout, stderr) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+                if (stderr) {
+                    reject(new Error(stderr));
+                    return;
+                }
+                resolve(stdout);
+            });
+        });
+    }
+
+    executeRemoveFileAndDirectoryCommand(instanceIp: string,privateKeyPath: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "find . -maxdepth 1 -mindepth 1 ! -name '*.zip' ! -name '.*' -exec rm -rf {} +
+            "`;
+            exec(sshCommand, (error, stdout, stderr) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+                if (stderr) {
+                    reject(new Error(stderr));
+                    return;
+                }
+                resolve(stdout);
+            });
+        });
+    }
+
+    private sleep(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async firstGenerate(): Promise<string> {
+        await this.createTerraformConfig(this.instanceName,this.ami,this.instanceType);
+        const ip = await this.executeTerraform(this.instanceName);
+        
+        await this.sleep(30000);
+        
+        await this.executeKeyModCommand(this.privateKeyPath);
+        await this.executeSetupCommand(ip, this.privateKeyPath);
+        
+        return ip;
+    }
+
+    async uploadBackCode(ip: string, version: number, fileName: string): Promise<void> {
+        await this.executeSCPCommand(ip, `${fileName}.zip`, "~/", this.privateKeyPath);
+        await this.executeVersionNameChangeCommand(ip, version, fileName, this.privateKeyPath);
+    }
+
+    async executeBackCode(ip: string, version: number, fileName: string): Promise<void> {
+        await this.executeUnzipAndListFiles(ip, `${fileName}ver${version}.zip`, "~/", this.privateKeyPath);
+        await this.executeStartCommand(ip, this.privateKeyPath);
+    }
+
+    async terminateBackCode(ip: string): Promise<void> {
+        await this.executeClosePortCommand(ip, this.privateKeyPath);
+        await this.executeRemoveFileAndDirectoryCommand(ip, this.privateKeyPath);
+    }
 }
 
-
-function sleep(ms:number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-
-const deployService = new DeployService();
-const instanceName = 'gwak26';
-const ami = 'ami-01ed8ade75d4eee2f';
-const instanceType = 't2.micro';
-const fileName='express.zip';
-let temp_ip= 'localhost';
-
-deployService.createTerraformConfig(instanceName, ami, instanceType)
-    .then(() => deployService.executeTerraform(instanceName)) //cicd_key.pem에 대한 권한 설정 필요(rrr->rwrr)
-    .then((ip) => {
-        temp_ip = ip;
-        console.log(`AWS Instance IP: ${ip}`);
-        return sleep(30000); //생성된지 얼마 안되서 상태가 메롱해서 잠깐 기다림
-    })
-    .then(() => deployService.executeSCPCommand(temp_ip,fileName, "~/", "cicd_key.pem")) //zip 전송
-    .then((result) => console.log('SCP Command output:', result))
-  
-
-    .then(() => deployService.executeSetupCommand(temp_ip, "cicd_key.pem")) //필요한 의존성 설치, zip,unzip, npm 
-    .then((result) => console.log('Setup Command output:', result))
-
-    .then(() => deployService.executeUnzipAndListFiles(temp_ip,fileName, "~/", "cicd_key.pem"))
-    .then((result) => console.log('Unzip and List Command output:', result))
- 
-    .then(() => deployService.executeCommand(temp_ip, 'npm start', "cicd_key.pem"))
-    .then((result) => console.log('start node app Command output:', result))
-    .catch((error) => console.error('Error:', error));
-
-export default DeployService;
+module.exports = DeployService;
