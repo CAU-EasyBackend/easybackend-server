@@ -1,14 +1,14 @@
 import mongoose from 'mongoose';
 
 function connectDatabase() {
-  const mongodbURI: string | undefined = process.env.MONGODB_URI;
+  const mongodbURL: string | undefined = process.env.MONGODB_URL;
 
-  if (!mongodbURI) {
-    console.error('MONGODB_URI not defined in .env file');
+  if (!mongodbURL) {
+    console.error('MONGODB_URL not defined in .env file');
     process.exit(1);
   }
 
-  mongoose.connect(mongodbURI)
+  mongoose.connect(mongodbURL)
     .then(() => {
       console.log('MongoDB에 연결되었습니다.');
     })

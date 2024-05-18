@@ -5,8 +5,8 @@ import connectDatabase from './config/database';
 configureEnvironment();
 connectDatabase();
 
-const PORT = process.env.PORT || 80;
+const server_port = process.env.SERVER_PORT || 80;
 const server = configureExpressApp();
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+server.listen(server_port, () => {
+  console.log(`Server is running on port ${server_port}`);
 });

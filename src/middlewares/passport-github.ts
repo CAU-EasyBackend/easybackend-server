@@ -18,8 +18,8 @@ export function sessionMiddleware() {
 
   const session_store: string | undefined = process.env.SESSION_STORE;
   if(session_store === 'mongodb') {
-    const mongodb_URI : string | undefined = process.env.MONGODB_URI;
-    if(!mongodb_URI) {
+    const mongodb_URL : string | undefined = process.env.MONGODB_URL;
+    if(!mongodb_URL) {
       console.error('Error loading .env file');
       process.exit(1);
     }
@@ -29,7 +29,7 @@ export function sessionMiddleware() {
       resave: false,
       saveUninitialized: false,
       store: MongoStore.create({
-        mongoUrl: mongodb_URI,
+        mongoUrl: mongodb_URL,
         ttl: sessionExpireTime / 1000,
       }),
       cookie: {
