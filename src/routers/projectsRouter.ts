@@ -20,4 +20,19 @@ router.get('/list', isAuthenticated, wrapAsync(async (req: Request, res: Respons
   return res.status(responseStatus.status).json(response(responseStatus, projects));
 }));
 
+/**
+ * api 명세 yaml 조회 api
+ * get: /api/projects/:projectId/apiSpec
+ */
+router.get('/:projectId/apiSpec', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const projectId = req.params.projectId;
+
+  const apiSpec = await ProjectsService.getApiSpec(userId, projectId);
+
+  res.setHeader('Content-Type', 'test/yaml');
+  res.setHeader('Content-Disposition', `attachment; filename=${apiSpec.projectName}.yaml`);
+  res.send(apiSpec.yamlContent);
+}));
+
 export default router;
