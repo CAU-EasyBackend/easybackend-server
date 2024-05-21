@@ -8,26 +8,26 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const userId = req.user!.userId;
 
-    const userUploadFolder = path.join(uploadFolder, userId);
-    if(!fs.existsSync(userUploadFolder)) {
-      fs.mkdirSync(userUploadFolder, { recursive: true });
-    }
-
     if(file.fieldname === 'zipFile') {
-      const sourceCodeFolder = path.join(userUploadFolder, 'sourceCodes');
+      const sourceCodeFolder = path.join(uploadFolder, 'sourceCodes', userId);
       if(!fs.existsSync(sourceCodeFolder)) {
         fs.mkdirSync(sourceCodeFolder, { recursive: true });
       }
 
       cb(null, sourceCodeFolder);
     } else if(file.fieldname === 'yamlFile') {
-      const apiSpecFolder = path.join(userUploadFolder, 'apiSpecs');
+      const apiSpecFolder = path.join(uploadFolder, 'apiSpecs', userId);
       if(!fs.existsSync(apiSpecFolder)) {
         fs.mkdirSync(apiSpecFolder, { recursive: true });
       }
 
       cb(null, apiSpecFolder);
     } else {
+      const userUploadFolder = path.join(uploadFolder, userId);
+      if(!fs.existsSync(userUploadFolder)) {
+        fs.mkdirSync(userUploadFolder, { recursive: true });
+      }
+
       cb(null, userUploadFolder);
     }
   },

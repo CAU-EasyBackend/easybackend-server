@@ -90,7 +90,7 @@ class DeploymentsService {
     const repositoryUsername = pathParts[0];
     const repositoryName = pathParts[1].replace('.git', '');
 
-    const uploadFolder = path.resolve(__dirname, '..', '..', 'temps', 'uploads', userId, 'sourceCodes');
+    const uploadFolder = path.resolve(__dirname, '..', '..', 'temps', 'uploads', 'sourceCodes', userId);
     if(!fs.existsSync(uploadFolder)) {
       fs.mkdirSync(uploadFolder, { recursive: true });
     }
