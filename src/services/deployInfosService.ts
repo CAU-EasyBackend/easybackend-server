@@ -1,6 +1,6 @@
-import Instance, {IInstance} from '../../models/Instance';
-import Server, {IServer} from '../../models/Server';
-import ServerVersion, {IServerVersion} from '../../models/ServerVersion';
+import Instance, {IInstance} from '../models/Instance';
+import Server, {IServer} from '../models/Server';
+import ServerVersion, {IServerVersion} from '../models/ServerVersion';
 
 class DeployInfosService {
   async getStatusAll(userId: string) {

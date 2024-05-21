@@ -2,7 +2,7 @@ import {Request, Response, Router} from 'express';
 import {isAuthenticated} from '../middlewares/passport-github';
 import wrapAsync from '../helpers/wrapFunction';
 import {BaseResponseStatus} from '../helpers/baseResponseStatus';
-import DeployInfosService from '../services/users/deployInfosService';
+import DeployInfosService from '../services/deployInfosService';
 import response from '../helpers/response';
 
 const router = Router();
