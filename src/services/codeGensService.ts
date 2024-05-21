@@ -5,6 +5,7 @@ import {OpenAPIGeneratorScript} from '../scripts/OpenAPIGeneratorScript';
 import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import ZipService from './zipService';
 
 class CodeGensService {
   async generateCode(userId: string, projectId: string, frameworkType: string) {
@@ -36,6 +37,26 @@ class CodeGensService {
 
     const script = OpenAPIGeneratorScript(yamlFilePath, framework, generatorFolder);
     execSync(script);
+
+    return {
+      projectName: apiSpec.projectName,
+      dirPath: generatorFolder,
+    }
+  }
+
+  async zipGeneratedCode(userId: string, projectId: string, frameworkType: string) {
+    const generateResult = await this.generateCode(userId, projectId, frameworkType);
+
+    const projectName = generateResult.projectName;
+    const dirPath = generateResult.dirPath;
+    const zipPath = path.resolve(dirPath, '..', `${projectName}.zip`);
+
+    await ZipService.compressFolder(dirPath, zipPath);
+
+    return {
+      projectName,
+      zipPath,
+    }
   }
 }
 
