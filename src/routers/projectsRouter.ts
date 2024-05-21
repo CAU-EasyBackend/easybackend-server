@@ -5,6 +5,7 @@ import ProjectsService from '../services/projectsService';
 import {BaseResponseStatus} from '../helpers/baseResponseStatus';
 import response from '../helpers/response';
 import upload from '../middlewares/multerMiddleware';
+import fs from 'fs';
 
 const router = Router();
 
@@ -41,7 +42,7 @@ router.get('/:projectId/apiSpec', isAuthenticated, wrapAsync(async (req: Request
  * put: /api/projects/apiSpec/save
  * body: projectName
  */
-router.put('/api/projects/apiSpec/save', isAuthenticated, upload.single('yamlFile'), wrapAsync(async (req: Request, res: Response) => {
+router.put('/apiSpec/save', isAuthenticated, upload.single('yamlFile'), wrapAsync(async (req: Request, res: Response) => {
   if(!req.file) {
     const responseStatus = BaseResponseStatus.YAML_UPLOAD_ERROR;
     return res.status(responseStatus.status).json(response(responseStatus));
@@ -49,7 +50,9 @@ router.put('/api/projects/apiSpec/save', isAuthenticated, upload.single('yamlFil
 
   const userId = req.user!.userId;
   const projectName = req.body.projectName;
-  const yamlContent = req.file.buffer.toString();
+
+  const yamlFilePath = req.file.path;
+  const yamlContent = fs.readFileSync(yamlFilePath, 'utf-8');
 
   const responseStatus = BaseResponseStatus.SUCCESS;
   await ProjectsService.saveApiSpec(userId, projectName, yamlContent);
