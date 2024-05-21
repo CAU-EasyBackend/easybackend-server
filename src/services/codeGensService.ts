@@ -1,4 +1,4 @@
-import ApiSpec from '../models/ApiSpec';
+import ApiSpec, {IApiSpec} from '../models/ApiSpec';
 import {BaseResponseStatus} from '../helpers/baseResponseStatus';
 import HttpError from '../helpers/httpError';
 import {OpenAPIGeneratorScript} from '../scripts/OpenAPIGeneratorScript';
@@ -10,14 +10,7 @@ import {Octokit} from '@octokit/rest';
 import simpleGit from 'simple-git';
 
 class CodeGensService {
-  async generateCode(userId: string, projectId: string, frameworkType: string) {
-    const apiSpec = await ApiSpec.findById(projectId);
-    if(!apiSpec) {
-      throw new HttpError(BaseResponseStatus.UNKNOWN_PROJECT);
-    } else if(apiSpec.ownerUserId !== userId) {
-      throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
-    }
-
+  async generateCode(userId: string, apiSpec: IApiSpec, frameworkType: string) {
     const yamlFileFolder = path.resolve(__dirname, '..', '..', 'temps', 'apiSpecs', userId);
     if(!fs.existsSync(yamlFileFolder)) {
       fs.mkdirSync(yamlFileFolder, { recursive: true });
@@ -47,7 +40,14 @@ class CodeGensService {
   }
 
   async zipGeneratedCode(userId: string, projectId: string, frameworkType: string) {
-    const generateResult = await this.generateCode(userId, projectId, frameworkType);
+    const apiSpec = await ApiSpec.findById(projectId);
+    if(!apiSpec) {
+      throw new HttpError(BaseResponseStatus.UNKNOWN_PROJECT);
+    } else if(apiSpec.ownerUserId !== userId) {
+      throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
+    }
+
+    const generateResult = await this.generateCode(userId, apiSpec, frameworkType);
 
     const projectName = generateResult.projectName;
     const dirPath = generateResult.dirPath;
@@ -62,14 +62,21 @@ class CodeGensService {
   }
 
   async uploadGithubGeneratedCode(userId: string, accessToken: string, projectId: string, frameworkType: string) {
-    const generateResult = await this.generateCode(userId, projectId, frameworkType);
-    const dirPath = generateResult.dirPath;
+    const apiSpec = await ApiSpec.findById(projectId);
+    if(!apiSpec) {
+      throw new HttpError(BaseResponseStatus.UNKNOWN_PROJECT);
+    } else if(apiSpec.ownerUserId !== userId) {
+      throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
+    }
 
     const octokit = new Octokit({ auth: accessToken });
     const repo = await octokit.repos.createForAuthenticatedUser({
-      name: generateResult.projectName,
+      name: apiSpec.projectName,
       private: true,
     });
+
+    const generateResult = await this.generateCode(userId, apiSpec, frameworkType);
+    const dirPath = generateResult.dirPath;
 
     const git = simpleGit(dirPath);
     await git.init();
