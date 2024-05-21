@@ -87,7 +87,7 @@ out
 
 # Nuxt.js build / generate copySourceCode
 .nuxt
-dist
+temp
 
 # Gatsby files
 .cache/
@@ -149,3 +149,4 @@ dist
 .terraform/
 
 /uploads/
+/temps/
