@@ -1,6 +1,6 @@
 import simpleGit from 'simple-git';
 import JSZip from 'jszip';
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import path from 'path';
 import Instance, {IInstance} from '../models/Instance';
 import User from '../models/User';
@@ -90,8 +90,13 @@ class DeploymentsService {
     const repositoryUsername = pathParts[0];
     const repositoryName = pathParts[1].replace('.git', '');
 
-    const dirPath: string = 'uploads/deploy/' + repositoryUsername + '/' + repositoryName;
-    const zipPath: string = 'uploads/deploy/' + repositoryName + '.zip';
+    const uploadFolder = path.resolve(__dirname, '..', '..', 'temps', 'uploads', userId, 'sourceCodes');
+    if(!fs.existsSync(uploadFolder)) {
+      fs.mkdirSync(uploadFolder, { recursive: true });
+    }
+
+    const dirPath: string = path.join(uploadFolder, repositoryUsername, repositoryName);
+    const zipPath: string = path.join(uploadFolder, repositoryName + '.zip');
 
     const git = simpleGit();
     await git.clone(repositoryURL, dirPath);
@@ -109,21 +114,21 @@ class DeploymentsService {
     await this.addDirectoryToZip(zip, dirPath);
 
     const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
-    await fs.writeFile(zipPath, zipContent);
+    await fs.promises.writeFile(zipPath, zipContent);
   }
 
   async addDirectoryToZip(zip: JSZip, dirPath: string, basePath: string = '') {
-    const files = await fs.readdir(dirPath);
+    const files = await fs.promises.readdir(dirPath);
 
     for(const file of files) {
       const filePath = path.join(dirPath, file);
-      const stat = await fs.stat(filePath);
+      const stat = await fs.promises.stat(filePath);
 
       if(stat.isDirectory()) {
         const subDir = zip.folder(path.join(basePath, file))!;
         await this.addDirectoryToZip(subDir, filePath, path.join(basePath, file));
       } else {
-        const content = await fs.readFile(filePath);
+        const content = await fs.promises.readFile(filePath);
         zip.file(path.join(basePath, file), content);
       }
     }
