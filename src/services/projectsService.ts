@@ -23,6 +23,16 @@ class ProjectsService {
 
     return apiSpec;
   }
+
+  async saveApiSpec(userId: string, projectName: string, yamlContent: string) {
+    let apiSpec = await ApiSpec.findOne({ projectName, ownerUserId: userId });
+    if(!apiSpec) {
+      apiSpec = new ApiSpec({ projectName, ownerUserId: userId, yamlContent });
+    } else {
+      apiSpec.yamlContent = yamlContent;
+    }
+    await apiSpec.save();
+  }
 }
 
 export default new ProjectsService();
