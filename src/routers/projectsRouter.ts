@@ -38,10 +38,10 @@ router.get('/:projectId/apiSpec', isAuthenticated, wrapAsync(async (req: Request
 
 /**
  * api 명세서 저장 api
- * post: /api/projects/apiSpec/save
+ * put: /api/projects/apiSpec/save
  * body: projectName
  */
-router.post('/api/projects/apiSpec/save', isAuthenticated, upload.single('yamlFile'), wrapAsync(async (req: Request, res: Response) => {
+router.put('/api/projects/apiSpec/save', isAuthenticated, upload.single('yamlFile'), wrapAsync(async (req: Request, res: Response) => {
   if(!req.file) {
     const responseStatus = BaseResponseStatus.YAML_UPLOAD_ERROR;
     return res.status(responseStatus.status).json(response(responseStatus));
