@@ -6,6 +6,8 @@ import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import ZipService from './zipService';
+import {Octokit} from '@octokit/rest';
+import simpleGit from 'simple-git';
 
 class CodeGensService {
   async generateCode(userId: string, projectId: string, frameworkType: string) {
@@ -56,6 +58,29 @@ class CodeGensService {
     return {
       projectName,
       zipPath,
+    }
+  }
+
+  async uploadGithubGeneratedCode(userId: string, accessToken: string, projectId: string, frameworkType: string) {
+    const generateResult = await this.generateCode(userId, projectId, frameworkType);
+    const dirPath = generateResult.dirPath;
+
+    const octokit = new Octokit({ auth: accessToken });
+    const repo = await octokit.repos.createForAuthenticatedUser({
+      name: generateResult.projectName,
+      private: true,
+    });
+
+    const git = simpleGit(dirPath);
+    await git.init();
+    await git.add('.');
+    await git.commit('initial commit');
+    await git.addRemote('origin', repo.data.clone_url);
+    await git.push('origin', 'main');
+
+    return {
+      projectName: generateResult.projectName,
+      repoUrl: repo.data.html_url,
     }
   }
 }

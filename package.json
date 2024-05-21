@@ -13,6 +13,8 @@
   "license": "MIT",
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.1.0",
+    "@octokit/rest": "^20.1.1",
+    "@octokit/types": "^13.5.0",
     "@openapitools/openapi-generator-cli": "^2.13.4",
     "@types/axios": "^0.14.0",
     "@types/cors": "^2.8.16",
