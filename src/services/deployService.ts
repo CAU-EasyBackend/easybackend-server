@@ -1,14 +1,29 @@
 import { exec,spawn } from 'child_process';
 import * as fs from 'fs';
+import * as path from 'path';
+
+
 
 class DeployService {
-    private instanceName = 'gwaktt';
+    private instanceName = 'gwaktest_total';
     private ami = 'ami-01ed8ade75d4eee2f';
     private instanceType = 't2.micro';
-    private privateKeyPath = 'cicd_key.pem';
+    private privateKeyPath = 'terras/cicd_key.pem';
+    private terraformDir = path.resolve(__dirname);
+
+    private changeToTerraformDir() {
+        
+        //process.chdir(this.terraformDir);
+        console.log(`working directory is: ${process.cwd()}`);
+    }
+
+
 
 
     createTerraformConfig(instanceName: string, ami: string, instanceType: string): Promise<void> {
+        console.log(`working directory: ${process.cwd()}`);
+        this.changeToTerraformDir();
+         
         return new Promise((resolve, reject) => {
             const config = `
 resource "aws_instance" "${instanceName}" {
@@ -52,7 +67,8 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     }
 }
 `;
-            fs.writeFile(`${instanceName}.tf`, config, (err) => {
+
+            fs.writeFile(`terras/${instanceName}.tf`, config, (err) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -63,8 +79,9 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     }
 
     executeTerraform(instanceName: string): Promise<string> {
+    
         return new Promise((resolve, reject) => {
-            exec('terraform init && terraform apply -auto-approve', (error, stdout, stderr) => {
+            exec('cd terras && terraform init && terraform apply -auto-approve',  (error, stdout, stderr) => {
                 if (error) {
                     reject(error);
                     return;
@@ -84,6 +101,7 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     }
 
     executeCommand(instanceIp: string, command: string, privateKeyPath: string): Promise<string> {
+         
         return new Promise((resolve, reject) => {
             const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "${command}"`;
             exec(sshCommand, (error, stdout, stderr) => {
@@ -101,6 +119,7 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     }
 
     executeSetupCommand(instanceIp: string, privateKeyPath: string): Promise<string> {
+         
         return new Promise((resolve, reject) => {
             const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "export DEBIAN_FRONTEND=noninteractive && sudo apt-get update && sudo apt-get install -y zip unzip && curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash - && sudo apt-get install -y nodejs && ls ~/"`;
             exec(sshCommand, (error, stdout, stderr) => {
@@ -117,6 +136,7 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     }
 
     executeKeyModCommand(privateKeyPath: string): Promise<string> {
+         
         return new Promise((resolve, reject) => {
             // 환경에 따라 적절한 권한 설정 명령을 선택합니다.
             const isWindows = process.platform === 'win32';
@@ -141,6 +161,7 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     }
 
     executeSCPCommand(instanceIp: string, localFilePath: string, remoteFilePath: string, privateKeyPath: string): Promise<string> {
+         
         return new Promise((resolve, reject) => {
            // const icaclsCommand = `icacls "${privateKeyPath}" /reset && icacls "${privateKeyPath}" /grant:r "%USERNAME%:R" && icacls "${privateKeyPath}" /inheritance:r`; // 윈도우 실행환경의 경우
            // const chmodCommand = `null`; // ubuntu version
@@ -161,6 +182,7 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
 
 
     executeUnzipAndListFiles(instanceIp: string, zipFilePath: string, targetDirectory: string, privateKeyPath: string): Promise<string> {
+         
         return new Promise((resolve, reject) => {
             const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "unzip -o ${zipFilePath} -d ${targetDirectory} && ls ${targetDirectory}"`;
             exec(sshCommand, (error, stdout, stderr) => {
@@ -177,6 +199,7 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     }
 
     executeStartCommand(instanceIp: string, privateKeyPath: string): Promise<void> {
+         
         return new Promise((resolve, reject) => {
             const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "npm start"`;
             const child = spawn(sshCommand, { shell: true });
@@ -210,6 +233,7 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     }
 
     executeVersionNameChangeCommand(instanceIp: string, version:number, fileName:string,privateKeyPath: string): Promise<string> {
+         
         return new Promise((resolve, reject) => {
             const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "sudo mv ${fileName}.zip ${fileName}ver${version}.zip"`;
             exec(sshCommand, (error, stdout, stderr) => {
@@ -227,6 +251,7 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     }
 
     executeClosePortCommand(instanceIp: string,privateKeyPath: string): Promise<string> {
+         
         return new Promise((resolve, reject) => {
             const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "sudo lsof -t -i :8080 | xargs sudo kill -9"`;
             exec(sshCommand, (error, stdout, stderr) => {
@@ -244,6 +269,7 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     }
 
     executeRemoveFileAndDirectoryCommand(instanceIp: string,privateKeyPath: string): Promise<string> {
+         
         return new Promise((resolve, reject) => {
             const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "find . -maxdepth 1 -mindepth 1 ! -name '*.zip' ! -name '.*' -exec rm -rf {} +
             "`;
@@ -266,7 +292,10 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     }
 
     async firstGenerate(): Promise<string> {
+        console.log(`asdfworking directory\n\n\n\n\n\n: ${process.cwd()}`);
+    
         await this.createTerraformConfig(this.instanceName,this.ami,this.instanceType);
+        
         const ip = await this.executeTerraform(this.instanceName);
         
         await this.sleep(30000);
@@ -277,8 +306,10 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
         return ip;
     }
 
-    async uploadBackCode(ip: string, version: number, fileName: string): Promise<void> {
-        await this.executeSCPCommand(ip, `${fileName}.zip`, "~/", this.privateKeyPath);
+    async uploadBackCode(ip: string, version: number, fileName: string, zipFileDir: string): Promise<void> {
+       // await this.executeSCPCommand(ip, `uploads/deploy/${fileName}.zip`, "~/", this.privateKeyPath);
+       console.log("uploadBackCode, zipFileDir/fileName is :",`${zipFileDir}/${fileName}`);
+        await this.executeSCPCommand(ip, `${zipFileDir}/${fileName}.zip`, "~/", this.privateKeyPath);
         await this.executeVersionNameChangeCommand(ip, version, fileName, this.privateKeyPath);
     }
 
@@ -293,4 +324,4 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     }
 }
 
-module.exports = DeployService;
+export default new DeployService();
