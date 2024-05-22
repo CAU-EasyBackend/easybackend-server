@@ -15,12 +15,9 @@ import ZipService from './zipService';
 class DeploymentsService {
   private deployService = DeployService; // DeployService 인스턴스 생성 입니다
 
-
-
-
   async deployNewServer(userId: string, zipPath: string) {
     const username: string = (await User.findOne({ userId }))!.username;
-    console.log("deployNewServer");
+    //console.log("deployNewServer");
 
     // 삭제된 인스턴스가 있는지 확인하고, 있다면 빠른 인스턴스 번호인 것부터 할당
     let newInstance: IInstance | null = await Instance.findOne({
@@ -59,20 +56,13 @@ class DeploymentsService {
     });
 
 
-    // const newZipPath = path.join(path.dirname(zipPath), `${newInstance.instanceName}.zip`); //~~~/orig.zip을 ~~~/instanceName.zip으로 변환
-    // console.log("dsService new zip path:",newZipPath);
 
-
-    // fs.rename(zipPath, newZipPath, (err) => {
-    //   if (err) throw err;
-    //   console.log('Rename error!');
-    // });
 
     // DeployService를 이용하여 서버 배포
-    const instanceIp = await this.deployService.firstGenerate(); // 인스턴스 IP 생성
-    console.log("here's the naming :", newServerVersion.version);
-    console.log("here's the instance naming :", newInstance.instanceName);
-    console.log("here is the zipPath name :", path.parse(zipPath).name);
+    const instanceIp = await this.deployService.firstGenerate(newInstance.instanceName); // 인스턴스 IP 생성
+   // console.log("here's the naming :", newServerVersion.version);
+   // console.log("here's the instance naming :", newInstance.instanceName);
+   // console.log("here is the zipPath name :", path.parse(zipPath).name);
 
 
     //zipPath의 zip을 /src/services로 위치를 변경하고, 이름을 newInstance.instanceName으로 변경하는 함수가 필요한 부분
@@ -89,7 +79,7 @@ class DeploymentsService {
   }
 
   async updateServer(userId: string, instanceId: string, zipPath: string) {
-    console.log("updateNewServer");
+    //console.log("updateNewServer");
     const instance: IInstance | null = await Instance.findOne({ _id: instanceId });
     if (!instance) {
       throw new HttpError(BaseResponseStatus.UNKNOWN_INSTANCE);
@@ -121,7 +111,7 @@ class DeploymentsService {
   }
 
   async gitCloneDeploy(userId: string, argInstanceId: string | null, repositoryURL: string) {
-    console.log("gitCloneDeploy");
+   // console.log("gitCloneDeploy");
     const parsedURL = new URL(repositoryURL);
     const pathParts = parsedURL.pathname.split('/').filter((part) => part !== '');
     const repositoryUsername = pathParts[0];

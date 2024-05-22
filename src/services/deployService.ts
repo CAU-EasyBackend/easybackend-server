@@ -5,24 +5,16 @@ import * as path from 'path';
 
 
 class DeployService {
-    private instanceName = 'gwaktest_total';
+    
     private ami = 'ami-01ed8ade75d4eee2f';
     private instanceType = 't2.micro';
     private privateKeyPath = 'terras/cicd_key.pem';
-    private terraformDir = path.resolve(__dirname);
-
-    private changeToTerraformDir() {
-        
-        //process.chdir(this.terraformDir);
-        console.log(`working directory is: ${process.cwd()}`);
-    }
 
 
 
 
     createTerraformConfig(instanceName: string, ami: string, instanceType: string): Promise<void> {
-        console.log(`working directory: ${process.cwd()}`);
-        this.changeToTerraformDir();
+      
          
         return new Promise((resolve, reject) => {
             const config = `
@@ -291,12 +283,12 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    async firstGenerate(): Promise<string> {
-        console.log(`asdfworking directory\n\n\n\n\n\n: ${process.cwd()}`);
-    
-        await this.createTerraformConfig(this.instanceName,this.ami,this.instanceType);
+    async firstGenerate(instanceName:string): Promise<string> {
         
-        const ip = await this.executeTerraform(this.instanceName);
+    
+        await this.createTerraformConfig(instanceName,this.ami,this.instanceType);
+        
+        const ip = await this.executeTerraform(instanceName);
         
         await this.sleep(30000);
         
@@ -308,7 +300,7 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
 
     async uploadBackCode(ip: string, version: number, fileName: string, zipFileDir: string): Promise<void> {
        // await this.executeSCPCommand(ip, `uploads/deploy/${fileName}.zip`, "~/", this.privateKeyPath);
-       console.log("uploadBackCode, zipFileDir/fileName is :",`${zipFileDir}/${fileName}`);
+      // console.log("uploadBackCode, zipFileDir/fileName is :",`${zipFileDir}/${fileName}`);
         await this.executeSCPCommand(ip, `${zipFileDir}/${fileName}.zip`, "~/", this.privateKeyPath);
         await this.executeVersionNameChangeCommand(ip, version, fileName, this.privateKeyPath);
     }

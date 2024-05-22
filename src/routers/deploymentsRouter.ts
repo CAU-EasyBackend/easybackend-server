@@ -20,7 +20,7 @@ router.post('/new/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(asy
   const zipPath: string = req.file.path;
 
   const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
-  console.log("here deploymentsRouter.ts and zipPath is :",zipPath);
+  //console.log("here deploymentsRouter.ts and zipPath is :",zipPath);
   const result = await DeploymentsService.deployNewServer(req.user!.userId, zipPath);
  
 
@@ -32,7 +32,7 @@ router.post('/new/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(asy
  *  post: /api/deployments/:instanceId/update/zip
  */
 router.patch('/:instanceId/update/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(async (req: Request, res: Response) => {
-  console.log("hey heysadfasdf :");
+  
   if(!req.file) {
     const responseStatus = BaseResponseStatus.ZIP_UPLOAD_ERROR;
     return res.status(responseStatus.status).json(response(responseStatus));
@@ -41,7 +41,7 @@ router.patch('/:instanceId/update/zip', isAuthenticated, upload.single('zipFile'
   const zipPath: string = req.file.path;
 
   const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
-  console.log("zip update, zipPath is :",zipPath);
+  
   const result = await DeploymentsService.updateServer(req.user!.userId, instanceId, zipPath);
 
   return res.status(responseStatus.status).json(response(responseStatus, result));
@@ -58,7 +58,7 @@ router.patch('/:instanceId/update/zip', isAuthenticated, upload.single('zipFile'
 router.post('/new/github', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
   
   const { repositoryURL } = req.body;
-  console.log("oioi :",repositoryURL);
+ // console.log("oioi :",repositoryURL);
 
   const responseStatus = BaseResponseStatus.SUCCESS;
   const result = await DeploymentsService.gitCloneDeploy(req.user!.userId, null, repositoryURL);
