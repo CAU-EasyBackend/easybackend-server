@@ -3,6 +3,7 @@ import wrapAsync from '../helpers/wrapFunction';
 import {BaseResponseStatus} from '../helpers/baseResponseStatus';
 import response from '../helpers/response';
 import {isAuthenticated} from '../middlewares/passport-github';
+import CodeGensService from '../services/codeGensService';
 
 const router = Router();
 
@@ -44,6 +45,21 @@ router.get('/auth/userInfo', isAuthenticated, wrapAsync(async (req: Request, res
     const responseStatus = BaseResponseStatus.SUCCESS;
     return res.status(responseStatus.status).json(response(responseStatus, userInfo));
   }
+}));
+
+/**
+ *  api 명세 기반 코드 생성 test api
+ *  get: /api/tests/codeGens
+ */
+router.get('/codeGens', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const projectId = req.body.projectId;
+  const frameworkType: string = req.body.frameworkType;
+
+  const responseStatus = BaseResponseStatus.SUCCESS;
+  await CodeGensService.generateCode(userId, projectId, frameworkType);
+
+  return res.status(responseStatus.status).json(response(responseStatus));
 }));
 
 export default router;

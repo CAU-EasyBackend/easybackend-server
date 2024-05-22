@@ -17,6 +17,11 @@ const BaseResponseStatus: any = {
 
   //git
   GIT_CLONE_ERROR: { status: 400, success: false, message: 'Git Clone Error' },
+  REPO_ALREADY_EXISTS: { status: 400, success: false, message: '이미 존재하는 레포지토리' },
+
+  //프로젝트 API 명세
+  UNKNOWN_PROJECT: { status: 404, success: false, message: '존재 하지 않은 프로젝트' },
+  YAML_UPLOAD_ERROR: { status: 400, success: false, message: 'Yaml 파일 전송 에러' },
 
   //배포
   DEPLOYMENT_SUCCESS: { status: 200, success: true, message: '배포 성공' },

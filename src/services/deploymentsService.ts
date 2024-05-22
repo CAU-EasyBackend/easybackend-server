@@ -1,14 +1,15 @@
 import simpleGit from 'simple-git';
 import JSZip from 'jszip';
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import path from 'path';
 import Instance, { IInstance } from '../models/Instance';
 import User from '../models/User';
 import Server, { IServer } from '../models/Server';
 import ServerVersion from '../models/ServerVersion';
 import HttpError from '../helpers/httpError';
-import { BaseResponseStatus } from '../helpers/baseResponseStatus';
 import DeployService from './deployService'; // DeployService import 추가
+import {BaseResponseStatus} from '../helpers/baseResponseStatus';
+import ZipService from './zipService';
 
 class DeploymentsService {
   private deployService = DeployService; // DeployService 인스턴스 생성 입니다
@@ -114,53 +115,22 @@ class DeploymentsService {
     const repositoryUsername = pathParts[0];
     const repositoryName = pathParts[1].replace('.git', '');
 
-    const dirPath: string = path.join('uploads', 'deploy', repositoryUsername, repositoryName);
-    const zipPath: string = path.join('uploads', 'deploy', `${repositoryName}.zip`);
-    const userDirPath: string = path.join('uploads', 'deploy', repositoryUsername);
-
-    
-    try {
-      await fs.rm(userDirPath, { recursive: true, force: true });
-      console.log(`Deleted directory: ${userDirPath}`);
-    } catch (err) {
-      console.error(`Error deleting directory: ${userDirPath}`, err);
+    const uploadFolder = path.resolve(__dirname, '..', '..', 'temps', 'uploads', 'sourceCodes', userId);
+    if(!fs.existsSync(uploadFolder)) {
+      fs.mkdirSync(uploadFolder, { recursive: true });
     }
+
+    const dirPath: string = path.join(uploadFolder, repositoryUsername, repositoryName);
+    const zipPath: string = path.join(uploadFolder, repositoryName + '.zip');
 
     const git = simpleGit();
     await git.clone(repositoryURL, dirPath);
-    await this.compressFolder(dirPath, zipPath);
+    await ZipService.compressFolder(dirPath, zipPath);
 
     if (argInstanceId) { //argInstaceId는 매개변수로 들어온 instanceId
       await this.updateServer(userId, argInstanceId, zipPath);
     } else {
       await this.deployNewServer(userId, zipPath);
-    }
-  }
-
-  async compressFolder(dirPath: string, zipPath: string) {
-    console.log("compressFolder");
-    const zip = new JSZip();
-    await this.addDirectoryToZip(zip, dirPath);
-
-    const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
-    await fs.writeFile(zipPath, zipContent);
-  }
-
-  async addDirectoryToZip(zip: JSZip, dirPath: string, basePath: string = '') {
-    console.log("addDirecttoryTozip");
-    const files = await fs.readdir(dirPath);
-
-    for (const file of files) {
-      const filePath = path.join(dirPath, file);
-      const stat = await fs.stat(filePath);
-
-      if (stat.isDirectory()) {
-        const subDir = zip.folder(path.join(basePath, file))!;
-        await this.addDirectoryToZip(subDir, filePath, path.join(basePath, file));
-      } else {
-        const content = await fs.readFile(filePath);
-        zip.file(path.join(basePath, file), content);
-      }
     }
   }
 }
