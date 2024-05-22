@@ -1,5 +1,4 @@
 import simpleGit from 'simple-git';
-import JSZip from 'jszip';
 import fs from 'fs';
 import path from 'path';
 import Instance, { IInstance } from '../models/Instance';
@@ -8,11 +7,16 @@ import Server, { IServer } from '../models/Server';
 import ServerVersion from '../models/ServerVersion';
 import HttpError from '../helpers/httpError';
 import DeployService from './deployService'; // DeployService import 추가
-import {BaseResponseStatus} from '../helpers/baseResponseStatus';
+import { BaseResponseStatus } from '../helpers/baseResponseStatus';
 import ZipService from './zipService';
+
+
 
 class DeploymentsService {
   private deployService = DeployService; // DeployService 인스턴스 생성 입니다
+
+
+
 
   async deployNewServer(userId: string, zipPath: string) {
     const username: string = (await User.findOne({ userId }))!.username;
@@ -54,20 +58,28 @@ class DeploymentsService {
       version: 1,
     });
 
-    console.log("shihsi : ",__dirname);
-    const newZipPath = path.join(__dirname,"../../uploads/deploy", `${newInstance.instanceName}.zip`);
-    await fs.rename(zipPath, newZipPath);
+
+    // const newZipPath = path.join(path.dirname(zipPath), `${newInstance.instanceName}.zip`); //~~~/orig.zip을 ~~~/instanceName.zip으로 변환
+    // console.log("dsService new zip path:",newZipPath);
+
+
+    // fs.rename(zipPath, newZipPath, (err) => {
+    //   if (err) throw err;
+    //   console.log('Rename error!');
+    // });
 
     // DeployService를 이용하여 서버 배포
     const instanceIp = await this.deployService.firstGenerate(); // 인스턴스 IP 생성
-    console.log("here's the naming :",newServerVersion.version);
-    console.log("here's the instance naming :",newInstance.instanceName);
+    console.log("here's the naming :", newServerVersion.version);
+    console.log("here's the instance naming :", newInstance.instanceName);
+    console.log("here is the zipPath name :", path.parse(zipPath).name);
+
 
     //zipPath의 zip을 /src/services로 위치를 변경하고, 이름을 newInstance.instanceName으로 변경하는 함수가 필요한 부분
-   
 
-    await this.deployService.uploadBackCode(instanceIp, newServerVersion.version, newInstance.instanceName); // 코드 업로드
-    await this.deployService.executeBackCode(instanceIp, newServerVersion.version, newInstance.instanceName); // 코드 실행
+
+    await this.deployService.uploadBackCode(instanceIp, newServerVersion.version, path.parse(zipPath).name, path.dirname(zipPath)); // 코드 업로드
+    await this.deployService.executeBackCode(instanceIp, newServerVersion.version, path.parse(zipPath).name); // 코드 실행
 
     newInstance.status = 'running';
     newInstance.IP = instanceIp; // IP 주소를 인스턴스에 저장
@@ -99,8 +111,8 @@ class DeploymentsService {
 
     // DeployService를 이용하여 서버 업데이트
     await this.deployService.terminateBackCode(instance.IP); // 기존 코드 종료
-    await this.deployService.uploadBackCode(instance.IP, newServerVersion.version, instance.instanceName); // 새 코드 업로드
-    await this.deployService.executeBackCode(instance.IP, newServerVersion.version, instance.instanceName); // 새 코드 실행
+    await this.deployService.uploadBackCode(instance.IP, newServerVersion.version, path.parse(zipPath).name, path.dirname(zipPath)); // 새 코드 업로드
+    await this.deployService.executeBackCode(instance.IP, newServerVersion.version, path.parse(zipPath).name); // 새 코드 실행
 
     instance.status = 'running';
     await instance.save();
@@ -116,12 +128,24 @@ class DeploymentsService {
     const repositoryName = pathParts[1].replace('.git', '');
 
     const uploadFolder = path.resolve(__dirname, '..', '..', 'temps', 'uploads', 'sourceCodes', userId);
-    if(!fs.existsSync(uploadFolder)) {
+    if (!fs.existsSync(uploadFolder)) {
       fs.mkdirSync(uploadFolder, { recursive: true });
     }
 
     const dirPath: string = path.join(uploadFolder, repositoryUsername, repositoryName);
     const zipPath: string = path.join(uploadFolder, repositoryName + '.zip');
+
+    // Delete the existing .zip file if it exists
+    if (fs.existsSync(zipPath)) {
+      fs.unlinkSync(zipPath);
+    }
+
+    // Delete the directory and its contents if it exists
+    if (fs.existsSync(dirPath)) {
+      fs.rmdirSync(dirPath, { recursive: true });
+    }
+
+
 
     const git = simpleGit();
     await git.clone(repositoryURL, dirPath);
@@ -134,5 +158,7 @@ class DeploymentsService {
     }
   }
 }
+
+
 
 export default new DeploymentsService();

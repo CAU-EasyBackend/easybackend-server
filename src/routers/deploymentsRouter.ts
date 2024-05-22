@@ -20,8 +20,9 @@ router.post('/new/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(asy
   const zipPath: string = req.file.path;
 
   const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
-  const result = await DeploymentsService.deployNewServer(req.user!.userId, zipPath);
   console.log("here deploymentsRouter.ts and zipPath is :",zipPath);
+  const result = await DeploymentsService.deployNewServer(req.user!.userId, zipPath);
+ 
 
   return res.status(responseStatus.status).json(response(responseStatus, result));
 }));

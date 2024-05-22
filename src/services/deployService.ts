@@ -8,7 +8,7 @@ class DeployService {
     private instanceName = 'gwaktest_total';
     private ami = 'ami-01ed8ade75d4eee2f';
     private instanceType = 't2.micro';
-    private privateKeyPath = 'uploads/terraform/cicd_key.pem';
+    private privateKeyPath = 'terras/cicd_key.pem';
     private terraformDir = path.resolve(__dirname);
 
     private changeToTerraformDir() {
@@ -68,7 +68,7 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
 }
 `;
 
-            fs.writeFile(`uploads/terraform/${instanceName}.tf`, config, (err) => {
+            fs.writeFile(`terras/${instanceName}.tf`, config, (err) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -81,7 +81,7 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
     executeTerraform(instanceName: string): Promise<string> {
     
         return new Promise((resolve, reject) => {
-            exec('cd uploads/terraform && terraform init && terraform apply -auto-approve',  (error, stdout, stderr) => {
+            exec('cd terras && terraform init && terraform apply -auto-approve',  (error, stdout, stderr) => {
                 if (error) {
                     reject(error);
                     return;
@@ -306,8 +306,10 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
         return ip;
     }
 
-    async uploadBackCode(ip: string, version: number, fileName: string): Promise<void> {
-        await this.executeSCPCommand(ip, `uploads/deploy/${fileName}.zip`, "~/", this.privateKeyPath);
+    async uploadBackCode(ip: string, version: number, fileName: string, zipFileDir: string): Promise<void> {
+       // await this.executeSCPCommand(ip, `uploads/deploy/${fileName}.zip`, "~/", this.privateKeyPath);
+       console.log("uploadBackCode, zipFileDir/fileName is :",`${zipFileDir}/${fileName}`);
+        await this.executeSCPCommand(ip, `${zipFileDir}/${fileName}.zip`, "~/", this.privateKeyPath);
         await this.executeVersionNameChangeCommand(ip, version, fileName, this.privateKeyPath);
     }
 
