@@ -68,7 +68,7 @@ router.post('/new/github', isAuthenticated, wrapAsync(async (req: Request, res: 
  *  params: instanceID
  *  body: repositoryURL
  */
-router.patch('/:instanceId/update/zip', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+router.patch('/:instanceId/update/github', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const instanceId: string = req.params.instanceId
   const { repositoryURL, frameworkType } = req.body;
