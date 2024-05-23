@@ -5,7 +5,7 @@ import response from '../helpers/response';
 import wrapAsync from '../helpers/wrapFunction';
 import DeploymentsService from '../services/deploymentsService';
 import {isAuthenticated} from '../middlewares/passport-github';
-
+import mongoose from 'mongoose';
 const router = Router();
 
 /**
@@ -32,6 +32,7 @@ router.post('/new/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(asy
  *  post: /api/deployments/:instanceId/update/zip
  */
 router.patch('/:instanceId/update/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(async (req: Request, res: Response) => {
+  
   if(!req.file) {
     const responseStatus = BaseResponseStatus.ZIP_UPLOAD_ERROR;
     return res.status(responseStatus.status).json(response(responseStatus));
@@ -46,6 +47,9 @@ router.patch('/:instanceId/update/zip', isAuthenticated, upload.single('zipFile'
 
   return res.status(responseStatus.status).json(response(responseStatus, result));
 }));
+
+
+
 
 /**
  *  백엔드 배포 (github repository clone) api
