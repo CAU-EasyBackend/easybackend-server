@@ -48,11 +48,13 @@ class DeploymentsService {
       serverName: 'server',
       runningVersion: 1,
       latestVersion: 1,
+      port: 8080, 
     });
 
     const newServerVersion = new ServerVersion({
       serverId: newServer._id,
       version: 1,
+      port: 8080,
     });
 
 
@@ -94,9 +96,11 @@ class DeploymentsService {
     const newServerVersion = new ServerVersion({
       serverId: server._id,
       version: server.latestVersion + 1,
+      port: 8080,
     });
-    server.runningVersion = server.latestVersion;
+    
     server.latestVersion = newServerVersion.version;
+    server.runningVersion = server.latestVersion;
 
     // DeployService를 이용하여 서버 업데이트
     await this.deployService.terminateBackCode(instance.IP); // 기존 코드 종료
