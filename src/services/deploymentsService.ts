@@ -13,9 +13,8 @@ import ZipService from './zipService';
 
 
 class DeploymentsService {
-  private deployService = DeployService; // DeployService 인스턴스 생성 입니다
-
-  async deployNewServer(userId: string, zipPath: string) {
+  async deployNewServer(userId: string, zipPath: string, frameworkType: string) {
+    private deployService = DeployService; // DeployService 인스턴스 생성 입니다
     const username: string = (await User.findOne({ userId }))!.username;
     //console.log("deployNewServer");
 
@@ -78,8 +77,7 @@ class DeploymentsService {
     await newServerVersion.save();
   }
 
-  async updateServer(userId: string, instanceId: string, zipPath: string) {
-    //console.log("updateNewServer");
+  async updateServer(userId: string, instanceId: string, zipPath: string, frameworkType: string) {
     const instance: IInstance | null = await Instance.findOne({ _id: instanceId });
     if (!instance) {
       throw new HttpError(BaseResponseStatus.UNKNOWN_INSTANCE);
@@ -110,8 +108,7 @@ class DeploymentsService {
     await newServerVersion.save();
   }
 
-  async gitCloneDeploy(userId: string, argInstanceId: string | null, repositoryURL: string) {
-   // console.log("gitCloneDeploy");
+  async gitCloneDeploy(userId: string, instanceId: string | null, repositoryURL: string, frameworkType: string) {
     const parsedURL = new URL(repositoryURL);
     const pathParts = parsedURL.pathname.split('/').filter((part) => part !== '');
     const repositoryUsername = pathParts[0];
@@ -141,10 +138,10 @@ class DeploymentsService {
     await git.clone(repositoryURL, dirPath);
     await ZipService.compressFolder(dirPath, zipPath);
 
-    if (argInstanceId) { //argInstaceId는 매개변수로 들어온 instanceId
-      await this.updateServer(userId, argInstanceId, zipPath);
+    if(instanceId) {
+      await this.updateServer(userId, instanceId, zipPath, frameworkType);
     } else {
-      await this.deployNewServer(userId, zipPath);
+      await this.deployNewServer(userId, zipPath, frameworkType);
     }
   }
 }

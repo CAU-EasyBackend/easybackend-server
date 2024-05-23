@@ -87,7 +87,7 @@ class CodeGensService {
 
     return {
       projectName: generateResult.projectName,
-      repoUrl: repo.data.html_url,
+      repositoryURL: repo.data.html_url,
     }
   }
 }
