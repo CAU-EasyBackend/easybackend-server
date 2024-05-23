@@ -29,6 +29,7 @@ function configureExpressApp() {
   app.use(cors({
     origin: frontEndURL,
     credentials: true,
+    exposedHeaders: ['Content-Disposition'],
   }));
   app.use(methodOverride());
 
