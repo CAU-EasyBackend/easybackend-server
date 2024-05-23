@@ -17,10 +17,12 @@ router.post('/new/zip', isAuthenticated, upload.single('zipFile'), wrapAsync(asy
     const responseStatus = BaseResponseStatus.ZIP_UPLOAD_ERROR;
     return res.status(responseStatus.status).json(response(responseStatus));
   }
+  const userId = req.user!.userId;
+  const frameworkType: string = req.body.frameworkType;
   const zipPath: string = req.file.path;
 
   const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
-  const result = await DeploymentsService.deployNewServer(req.user!.userId, zipPath);
+  const result = await DeploymentsService.deployNewServer(userId, zipPath, frameworkType);
 
   return res.status(responseStatus.status).json(response(responseStatus, result));
 }));
@@ -34,11 +36,13 @@ router.patch('/:instanceId/update/zip', isAuthenticated, upload.single('zipFile'
     const responseStatus = BaseResponseStatus.ZIP_UPLOAD_ERROR;
     return res.status(responseStatus.status).json(response(responseStatus));
   }
+  const userId = req.user!.userId;
   const instanceId: string = req.params.instanceId;
+  const frameworkType: string = req.body.frameworkType;
   const zipPath: string = req.file.path;
 
   const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
-  const result = await DeploymentsService.updateServer(req.user!.userId, instanceId, zipPath);
+  const result = await DeploymentsService.updateServer(userId, instanceId, zipPath, frameworkType);
 
   return res.status(responseStatus.status).json(response(responseStatus, result));
 }));
@@ -49,10 +53,11 @@ router.patch('/:instanceId/update/zip', isAuthenticated, upload.single('zipFile'
  *  body: repositoryURL
  */
 router.post('/new/github', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
-  const { repositoryURL } = req.body;
+  const userId = req.user!.userId;
+  const { repositoryURL, frameworkType } = req.body;
 
   const responseStatus = BaseResponseStatus.SUCCESS;
-  const result = await DeploymentsService.gitCloneDeploy(req.user!.userId, null, repositoryURL);
+  const result = await DeploymentsService.gitCloneDeploy(userId, null, repositoryURL, frameworkType);
 
   return res.status(responseStatus.status).json(response(responseStatus, result));
 }));
@@ -64,11 +69,12 @@ router.post('/new/github', isAuthenticated, wrapAsync(async (req: Request, res: 
  *  body: repositoryURL
  */
 router.patch('/:instanceId/update/zip', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
   const instanceId: string = req.params.instanceId
-  const { repositoryURL } = req.body;
+  const { repositoryURL, frameworkType } = req.body;
 
   const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
-  const result = await DeploymentsService.gitCloneDeploy(req.user!.userId, instanceId, repositoryURL);
+  const result = await DeploymentsService.gitCloneDeploy(userId, instanceId, repositoryURL, frameworkType);
 
   return res.status(responseStatus.status).json(response(responseStatus, result));
 }));

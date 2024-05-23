@@ -11,7 +11,7 @@ import {BaseResponseStatus} from '../helpers/baseResponseStatus';
 import ZipService from './zipService';
 
 class DeploymentsService {
-  async deployNewServer(userId: string, zipPath: string){
+  async deployNewServer(userId: string, zipPath: string, frameworkType: string){
     const username: string = (await User.findOne({ userId }))!.username;
 
     //삭제된 인스턴스가 있는지 확인하고, 있다면 빠른 인스턴스 번호인 것부터 할당
@@ -57,7 +57,7 @@ class DeploymentsService {
     await newServerVersion.save();
   }
 
-  async updateServer(userId: string, instanceId: string, zipPath: string){
+  async updateServer(userId: string, instanceId: string, zipPath: string, frameworkType: string){
     const instance: IInstance | null = await Instance.findOne({ _id: instanceId });
     if(!instance) {
       throw new HttpError(BaseResponseStatus.UNKNOWN_INSTANCE);
@@ -85,7 +85,7 @@ class DeploymentsService {
     await newServerVersion.save();
   }
 
-  async gitCloneDeploy(userId: string, instanceId: string | null, repositoryURL: string) {
+  async gitCloneDeploy(userId: string, instanceId: string | null, repositoryURL: string, frameworkType: string) {
     const parsedURL = new URL(repositoryURL);
     const pathParts = parsedURL.pathname.split('/').filter((part) => part !== '');
     const repositoryUsername = pathParts[0];
@@ -104,9 +104,9 @@ class DeploymentsService {
     await ZipService.compressFolder(dirPath, zipPath);
 
     if(instanceId) {
-      await this.updateServer(userId, instanceId, zipPath);
+      await this.updateServer(userId, instanceId, zipPath, frameworkType);
     } else {
-      await this.deployNewServer(userId, zipPath);
+      await this.deployNewServer(userId, zipPath, frameworkType);
     }
   }
 }
