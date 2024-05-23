@@ -13,8 +13,9 @@ import ZipService from './zipService';
 
 
 class DeploymentsService {
+  private deployService = DeployService; // DeployService 인스턴스 생성 입니다
   async deployNewServer(userId: string, zipPath: string, frameworkType: string) {
-    private deployService = DeployService; // DeployService 인스턴스 생성 입니다
+    
     const username: string = (await User.findOne({ userId }))!.username;
     //console.log("deployNewServer");
 
