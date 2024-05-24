@@ -2,6 +2,7 @@ import ApiSpec, {IApiSpec} from '../models/ApiSpec';
 import {BaseResponseStatus} from '../helpers/baseResponseStatus';
 import HttpError from '../helpers/httpError';
 import {OpenAPIGeneratorScript} from '../scripts/OpenAPIGeneratorScript';
+import {OpenAPIChangeScript} from '../scripts/OpenAPIChangeScript'; //곽영헌 추가
 import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
@@ -30,8 +31,25 @@ class CodeGensService {
       fs.mkdirSync(generatorFolder, { recursive: true });
     }
 
-    const script = OpenAPIGeneratorScript(yamlFilePath, framework, generatorFolder);
-    execSync(script);
+    const script = OpenAPIGeneratorScript(yamlFilePath, framework, generatorFolder); 
+    execSync(script); 
+
+    let version=1; //곽영헌 추가, 적절한 버전 선택해야 함, 초기엔 ver1로 생성하고 ++를 함, 한편 꼭 데모때 업데이트되어 버전 1,2,3.. 에 대해 증명하는 방법이 version을 출력하는것만 있는게 아님, 
+    //코드 생성단계에서 이 코드가 
+    //어느 서버, 인스턴스의 몇번째 버전에서 쓰일지 확정되지 않았기 때문. 
+    const ChangeScript=OpenAPIChangeScript(version++); //곽영헌 추가, 일단은 버전 비스무리하게 가는데 위에 말한대로 생성한 코드가 어느 서버 인스턴스의 몇번째 버전에서 쓰일지 확정이 아님
+    
+     
+    const expressServerPath = path.join(generatorFolder, 'expressServer.js'); //expressServer.js 바꿔쓰기
+
+  
+    if (fs.existsSync(expressServerPath)) {//곽영헌 추가, 바꿔쓰기
+      fs.unlinkSync(expressServerPath); //곽영헌 추가, 바꿔쓰기
+    }
+
+    fs.writeFileSync(expressServerPath, ChangeScript, 'utf-8'); //곽영헌 추가 바꿔쓰기
+
+
 
     return {
       projectName: apiSpec.projectName,
@@ -83,7 +101,22 @@ class CodeGensService {
     await git.add('.');
     await git.commit('initial commit');
     await git.addRemote('origin', repo.data.clone_url);
-    await git.push('origin', 'main');
+
+     // 원격 저장소의 기본 브랜치 이름을 가져옴
+    const { data: repoData } = await octokit.repos.get({
+      owner: repo.data.owner.login,
+      repo: repo.data.name,
+    });
+    const defaultBranch = repoData.default_branch;
+    console.log("defaultBranch is :", defaultBranch);
+
+    // 기본 브랜치를 생성하고 체크아웃
+    await git.checkoutLocalBranch(defaultBranch);
+
+    // 기본 브랜치로 푸시
+    await git.push('origin', defaultBranch);
+
+    
 
     return {
       projectName: generateResult.projectName,
