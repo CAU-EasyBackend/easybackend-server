@@ -101,7 +101,22 @@ class CodeGensService {
     await git.add('.');
     await git.commit('initial commit');
     await git.addRemote('origin', repo.data.clone_url);
-    await git.push('origin', 'main');
+
+     // 원격 저장소의 기본 브랜치 이름을 가져옴
+    const { data: repoData } = await octokit.repos.get({
+      owner: repo.data.owner.login,
+      repo: repo.data.name,
+    });
+    const defaultBranch = repoData.default_branch;
+    console.log("defaultBranch is :", defaultBranch);
+
+    // 기본 브랜치를 생성하고 체크아웃
+    await git.checkoutLocalBranch(defaultBranch);
+
+    // 기본 브랜치로 푸시
+    await git.push('origin', defaultBranch);
+
+    
 
     return {
       projectName: generateResult.projectName,
