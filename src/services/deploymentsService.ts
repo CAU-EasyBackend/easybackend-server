@@ -149,6 +149,60 @@ class DeploymentsService {
       await this.deployNewServer(userId, zipPath, frameworkType);
     }
   }
+
+  //중간데모 이후 추가
+  async checkServerAlive(userId: string,instanceId: string) { //배포한 백엔드 서버가 동작하는지 반환
+    const instance: IInstance | null = await Instance.findOne({ _id: instanceId });
+    if (!instance) {
+      throw new HttpError(BaseResponseStatus.UNKNOWN_INSTANCE);
+    } else if (instance.ownerUserId !== userId) {
+      throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
+    }
+
+    await this.deployService.getServerStatus(instance.IP)
+
+    
+  }
+
+  async checkInstanceAlive(userId: string,instanceId: string) { //배포한 인스턴스가 살아있는지 반환
+    const instance: IInstance | null = await Instance.findOne({ _id: instanceId });
+    if (!instance) {
+      throw new HttpError(BaseResponseStatus.UNKNOWN_INSTANCE);
+    } else if (instance.ownerUserId !== userId) {
+      throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
+    }
+
+    await this.deployService.getInstanceStatus(instance.IP)
+  }
+
+  async deleteServer(userId: string, instanceId: string) { //배포한 백엔드 서버 끄기
+
+    const instance: IInstance | null = await Instance.findOne({ _id: instanceId });
+    if (!instance) {
+      throw new HttpError(BaseResponseStatus.UNKNOWN_INSTANCE);
+    } else if (instance.ownerUserId !== userId) {
+      throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
+    }
+
+    
+    await this.deployService.terminateBackCode(instance.IP); // 기존 코드 종료
+
+  }
+
+  async deleteInstance(userId: string, instanceId: string) {//배포한 인스턴스 삭제
+    const instance: IInstance | null = await Instance.findOne({ _id: instanceId });
+    if (!instance) {
+      throw new HttpError(BaseResponseStatus.UNKNOWN_INSTANCE);
+    } else if (instance.ownerUserId !== userId) {
+      throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
+    }
+
+    await this.deployService.terminateInstance(instance.instanceName)
+
+
+
+  }
+
 }
 
 
