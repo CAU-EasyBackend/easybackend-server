@@ -42,7 +42,8 @@
     "passport-github2": "^0.1.12",
     "simple-git": "^3.24.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "winston": "^3.13.0"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",

@@ -278,6 +278,53 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
             });
         });
     }
+    executeTerminateInstance(instanceName: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            exec(`cd terras && terraform destroy -auto-approve`, (error, stdout, stderr) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+                if (stderr) {
+                    reject(new Error(stderr));
+                    return;
+                }
+                resolve();
+            });
+        });
+    }
+    checkInstanceStatus(instanceIp: string, privateKeyPath: string): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "echo 'Instance is up'"`;
+            exec(sshCommand, (error, stdout, stderr) => {
+                if (error) {
+                    if (stderr && stderr.includes('Connection refused')) {
+                        resolve(false);
+                    } else {
+                        reject(error);
+                    }
+                    return;
+                }
+                resolve(true);
+            });
+        });
+    }
+    checkServerStatus(instanceIp: string, privateKeyPath: string): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "curl -s http://localhost:8080"`;
+            exec(sshCommand, (error, stdout, stderr) => {
+                if (error) {
+                    if (stderr && stderr.includes('Connection refused')) {
+                        resolve(false);
+                    } else {
+                        reject(error);
+                    }
+                    return;
+                }
+                resolve(true);
+            });
+        });
+    }
 
     private sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -314,6 +361,19 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
         await this.executeClosePortCommand(ip, this.privateKeyPath);
         await this.executeRemoveFileAndDirectoryCommand(ip, this.privateKeyPath);
     }
+    async terminateInstance(instanceName: string): Promise<void> {
+        await this.executeTerminateInstance(instanceName);
+    }
+
+    async getInstanceStatus(ip: string): Promise<boolean> {
+        return await this.checkInstanceStatus(ip, this.privateKeyPath);
+    }
+    async getServerStatus(ip: string): Promise<boolean> {
+        return await this.checkServerStatus(ip, this.privateKeyPath);
+    }
+
+
+
 }
 
 export default new DeployService();
