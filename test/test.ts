@@ -11,30 +11,30 @@ SwaggerParser.validate('test/project-test1.yaml')
     console.error(err);
   });
 
-/*
-SwaggerParser.parse('test/openapi.yaml')
+
+SwaggerParser.parse('test/project-test1.yaml')
   .then(api => {
     console.log('success');
-    //console.log(api);
-
+    console.log(api);
     const paths = api.paths;
+    //console.log(paths);
     for(const path in paths) {
       const pathItem = paths[path];
       //console.log(pathItem);
       for(const method in pathItem) {
         console.log(method);
-        const operation: any = pathItem.put;
-        if(operation == undefined) {
-          break;
-        }
+        const operation: any = pathItem.get;
         console.log(operation);
 
-        const requestBody: any = operation["requestBody"];
-        console.log(requestBody);
+        const responses: any = operation["responses"];
+        console.log(responses["200"]["content"]);
 
-        const content: any = requestBody["content"];
-        console.log(content);
+        //const requestBody: any = operation["requestBody"];
+        //console.log(requestBody);
 
+        //const content: any = requestBody["content"];
+        //console.log(content);
+        /*
         const new_content = {
           "application/json": {
             "schema": {
@@ -55,17 +55,17 @@ SwaggerParser.parse('test/openapi.yaml')
         console.log(requestBody);
         console.log(requestBody["content"]);
         console.log(requestBody["content"]["application/json"]);
-        console.log(requestBody["content"]["application/json"]["schema"]);
+        console.log(requestBody["content"]["application/json"]["schema"]);*/
         break;
       }
       break;
     }
 
-    const yaml_str = yaml.dump(api);
-    fs.writeFileSync('test/openapi2.yaml', yaml_str, 'utf8');
+    //const yaml_str = yaml.dump(api);
+    //fs.writeFileSync('test/openapi2.yaml', yaml_str, 'utf8');
   })
   .catch(err => {
     console.log('error');
     console.error(err);
   });
-*/
+
