@@ -28,6 +28,11 @@ const BaseResponseStatus: any = {
   ZIP_UPLOAD_ERROR: { status: 400, success: false, message: 'Zip 파일 업로드 에러' },
   UNKNOWN_INSTANCE: { status: 404, success: false, message: '존재 하지 않은 인스턴스' },
   UNKNOWN_SERVER: { status: 404, success: false, message: '존재 하지 않은 서버' },
+  STATUS_INSTANCE: { status: 200, success: true, message: '인스턴스 상태반환 성공'},
+  STATUS_SERVER: { status: 200, success: true, message: '서버 상태반환 성공'},
+  TERMINATE_INSTANCE: { status: 200, success: true, message: '인스턴스 삭제 성공'},
+  TERMINATE_SERVER: { status: 200, success: true, message: '서버 삭제 성공'},
+  LOG_FETCH_ERROR: {status: 400, success:false, message:'로그 가져오기 실패'}
 };
 
 export { IBaseResponseStatus, BaseResponseStatus };

@@ -6,6 +6,7 @@ import wrapAsync from '../helpers/wrapFunction';
 import DeploymentsService from '../services/deploymentsService';
 import {isAuthenticated} from '../middlewares/passport-github';
 import mongoose from 'mongoose';
+import { getLogsForInstance } from '../services/logService';
 const router = Router();
 
 /**
@@ -82,5 +83,104 @@ router.patch('/:instanceId/update/github', isAuthenticated, wrapAsync(async (req
 
   return res.status(responseStatus.status).json(response(responseStatus, result));
 }));
+
+
+//이하 중간데모 이후 작성
+
+/**
+ * 인스턴스 상태반환
+ * get: /api/deployments/:instanceId/status/instance
+ * params: instanceID
+ */
+router.get('/:instanceId/status/instance', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const instanceId: string = req.params.instanceId
+  
+
+  const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
+  const result = await DeploymentsService.checkInstanceAlive(userId,instanceId)
+
+  return res.status(responseStatus.status).json(response(responseStatus, result));
+}));
+
+
+/**
+ * 서버 상태반환
+ * get: /api/deployments/:instanceId/status/server
+ * params: instanceID
+ */
+router.get('/:instanceId/status/server', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const instanceId: string = req.params.instanceId
+  
+
+  const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
+  const result = await DeploymentsService.checkServerAlive(userId,instanceId)
+
+  return res.status(responseStatus.status).json(response(responseStatus, result));
+}));
+
+/**
+ * 서버 끄기
+ * post: /api/deployments/:instanceId/terminate/server
+ * params: instanceID
+ */
+router.post('/:instanceId/terminate/server', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const instanceId: string = req.params.instanceId
+  
+
+  const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
+  const result = await DeploymentsService.shutdownServer(userId,instanceId)
+
+  return res.status(responseStatus.status).json(response(responseStatus, result));
+}));
+
+/**
+ * 인스턴스 삭제
+ * post: /api/deployments/:instanceId/terminate/instance
+ * params: instanceID
+ */
+router.post('/:instanceId/terminate/instance', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const instanceId: string = req.params.instanceId
+  
+
+  const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
+  const result = await DeploymentsService.deleteInstance(userId,instanceId)
+
+  return res.status(responseStatus.status).json(response(responseStatus, result));
+}));
+
+/**
+ * 특정 인스턴스의 로그 반환
+ * get: /api/deployments/:instanceId/logs
+ * params: instanceID
+ */
+router.get('/:instanceId/logs', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+
+  const instanceId: string = req.params.instanceId;
+
+ 
+  try {
+    const logGroupName = `/aws/instance/${instanceId}-log-group`;
+    const logs = await getLogsForInstance(logGroupName);
+    const responseStatus = BaseResponseStatus.SUCCESS;
+    return res.status(responseStatus.status).json(response(responseStatus, logs));
+  } catch (error) {
+    const responseStatus = BaseResponseStatus.LOG_FETCH_ERROR; // 적절한 오류 상태 설정
+    return res.status(responseStatus.status).json(response(responseStatus));
+  }
+}));
+
+
+
+
+
+
+
+
+
+
 
 export default router;

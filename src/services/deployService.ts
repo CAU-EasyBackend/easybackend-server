@@ -28,6 +28,39 @@ resource "aws_instance" "${instanceName}" {
   tags = {
     Name = "${instanceName}"
   }
+
+    user_data = <<-EOF
+              #!/bin/bash
+              apt-get update -y
+              apt-get install -y awscli unzip
+
+              # Install the CloudWatch Logs agent
+              wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
+              python ./awslogs-agent-setup.py --region us-west-2 --non-interactive --configfile /etc/awslogs/awslogs.conf
+
+              # Create CloudWatch Logs configuration file
+              cat <<-EOT > /etc/awslogs/awslogs.conf
+              [general]
+              state_file = /var/awslogs/state/agent-state
+
+              [/var/log/syslog]
+              file = /var/log/syslog
+              log_group_name = ${instanceName}-log-group
+              log_stream_name = {instance_id}/syslog
+              datetime_format = %b %d %H:%M:%S
+
+              [/var/log/dmesg]
+              file = /var/log/dmesg
+              log_group_name = ${instanceName}-log-group
+              log_stream_name = {instance_id}/dmesg
+              datetime_format = %Y-%m-%dT%H:%M:%S
+
+              EOT
+
+              # Restart the CloudWatch Logs agent
+              service awslogs restart
+              chkconfig awslogs on
+              EOF
 }
 output "${instanceName}_public_ip" {
     value = aws_instance.${instanceName}.public_ip
@@ -57,6 +90,10 @@ resource "aws_security_group" "${instanceName}_allow_ssh" {
       protocol    = "-1"
       cidr_blocks = ["0.0.0.0/0"]
     }
+}
+resource "aws_cloudwatch_log_group" "example_log_group" {
+  name              = "/aws/instance/example-log-group"
+  retention_in_days = 14
 }
 `;
 

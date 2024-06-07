@@ -175,7 +175,7 @@ class DeploymentsService {
     await this.deployService.getInstanceStatus(instance.IP)
   }
 
-  async deleteServer(userId: string, instanceId: string) { //배포한 백엔드 서버 끄기
+  async shutdownServer(userId: string, instanceId: string) { //배포한 백엔드 서버 끄기
 
     const instance: IInstance | null = await Instance.findOne({ _id: instanceId });
     if (!instance) {
@@ -184,23 +184,85 @@ class DeploymentsService {
       throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
     }
 
+    const currentServer=await Server.findOne({instanceId: instanceId});
+
+    if(!currentServer) {
+      throw new HttpError(BaseResponseStatus.UNKNOWN_SERVER);
+    } 
+
+    //러닝버전 관리나 DB에서의 제거가 필요할수도 있음
+
+   
+
+    //1. 서버의 러닝버전 바꾸기
+    currentServer.runningVersion=0
+  
     
     await this.deployService.terminateBackCode(instance.IP); // 기존 코드 종료
 
+    await instance.save()
+    await currentServer.save()
+
   }
 
-  async deleteInstance(userId: string, instanceId: string) {//배포한 인스턴스 삭제
+  async deleteInstance(userId: string, instanceId: string) {
+   
     const instance: IInstance | null = await Instance.findOne({ _id: instanceId });
     if (!instance) {
       throw new HttpError(BaseResponseStatus.UNKNOWN_INSTANCE);
     } else if (instance.ownerUserId !== userId) {
       throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
     }
+   //삭제할 인스턴스의 서버 찾기
+    const servers: IServer[] = await Server.find({ instanceId: instanceId });
+  
+    //삭제할 인스턴스의 삭제할 서버의 서버세션(버전) 삭제
+    for (const server of servers) {
+      await ServerVersion.deleteMany({ serverId: server._id });
+    }
 
-    await this.deployService.terminateInstance(instance.instanceName)
 
+    await this.deployService.terminateInstance(instance.instanceName);
 
+        
+    await Server.deleteMany({ instanceId: instanceId });
+    await Instance.deleteOne({ _id: instanceId });
+  
+  }
 
+  async versionUpdateServer(userId: string, instanceId: string, srcVersion: number,dstVersion: number, zipPath: string, frameworkType: string) {
+    const instance: IInstance | null = await Instance.findOne({ _id: instanceId });
+    if (!instance) {
+      throw new HttpError(BaseResponseStatus.UNKNOWN_INSTANCE);
+    } else if (instance.ownerUserId !== userId) {
+      throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
+    }
+    /*
+
+    const server: IServer | null = await Server.findOne({ instanceId: instance._id });
+    if (!server) {
+      throw new HttpError(BaseResponseStatus.UNKNOWN_SERVER);
+    }
+
+    const newServerVersion = new ServerVersion({
+      serverId: server._id,
+      version: server.latestVersion + 1,
+      port: 8080,
+    });
+    
+    server.latestVersion = newServerVersion.version;
+    server.runningVersion = server.latestVersion;
+    */
+
+    // DeployService를 이용하여 서버 업데이트
+    await this.deployService.terminateBackCode(instance.IP); // 기존 코드 종료
+    await this.deployService.uploadBackCode(instance.IP, dstVersion, path.parse(zipPath).name, path.dirname(zipPath)); // 새 코드 업로드
+    await this.deployService.executeBackCode(instance.IP, dstVersion, path.parse(zipPath).name); // 새 코드 실행
+
+    instance.status = 'running';
+    await instance.save();
+    //await server.save();
+    //await newServerVersion.save();
   }
 
 }
