@@ -12,91 +12,132 @@ class DeployService {
 
 
 
-
     createTerraformConfig(instanceName: string, ami: string, instanceType: string): Promise<void> {
-      
-         
         return new Promise((resolve, reject) => {
             const config = `
-resource "aws_instance" "${instanceName}" {
-  ami           = "${ami}"
-  instance_type = "${instanceType}"
-  key_name = aws_key_pair.cicd_make_keypair.key_name
 
-  vpc_security_group_ids = [aws_security_group.${instanceName}_allow_ssh.id]
+resource "aws_iam_role" "${instanceName}_role" {
+  name = "${instanceName}_role"
 
-  tags = {
-    Name = "${instanceName}"
-  }
-
-    user_data = <<-EOF
-              #!/bin/bash
-              apt-get update -y
-              apt-get install -y awscli unzip
-
-              # Install the CloudWatch Logs agent
-              wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
-              python ./awslogs-agent-setup.py --region us-west-2 --non-interactive --configfile /etc/awslogs/awslogs.conf
-
-              # Create CloudWatch Logs configuration file
-              cat <<-EOT > /etc/awslogs/awslogs.conf
-              [general]
-              state_file = /var/awslogs/state/agent-state
-
-              [/var/log/syslog]
-              file = /var/log/syslog
-              log_group_name = ${instanceName}-log-group
-              log_stream_name = {instance_id}/syslog
-              datetime_format = %b %d %H:%M:%S
-
-              [/var/log/dmesg]
-              file = /var/log/dmesg
-              log_group_name = ${instanceName}-log-group
-              log_stream_name = {instance_id}/dmesg
-              datetime_format = %Y-%m-%dT%H:%M:%S
-
-              EOT
-
-              # Restart the CloudWatch Logs agent
-              service awslogs restart
-              chkconfig awslogs on
-              EOF
-}
-output "${instanceName}_public_ip" {
-    value = aws_instance.${instanceName}.public_ip
-}
-
-resource "aws_security_group" "${instanceName}_allow_ssh" {
-    name        = "${instanceName}_allow_ssh"
-    description = "Allow SSH inbound traffic"
-
-    ingress {
-      from_port   = 22 
-      to_port     = 22
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
     }
+  ]
+}
+EOF
+}
 
-    ingress {
-        from_port   = 8080 
-        to_port     = 8080
+resource "aws_iam_role_policy_attachment" "${instanceName}_role_attach" {
+  role       = aws_iam_role.${instanceName}_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+resource "aws_iam_instance_profile" "${instanceName}_profile" {
+  name = "${instanceName}_profile"
+  role = aws_iam_role.${instanceName}_role.name
+}
+    resource "aws_cloudwatch_log_group" "${instanceName}" {
+      name = "${instanceName}-group"
+      retention_in_days = 7
+    }
+    resource "aws_cloudwatch_log_stream" "${instanceName}" {
+      name           = "${instanceName}-stream"
+      log_group_name = aws_cloudwatch_log_group.${instanceName}.name
+}
+    
+    resource "aws_instance" "${instanceName}" {
+      ami           = "${ami}"
+      instance_type = "${instanceType}"
+      key_name      = aws_key_pair.cicd_make_keypair.key_name
+
+       iam_instance_profile = aws_iam_instance_profile.${instanceName}_profile.name
+    
+      vpc_security_group_ids = [aws_security_group.${instanceName}_allow_ssh.id]
+    
+      user_data = <<-EOF
+                  #!/bin/bash
+                  apt-get update
+                  apt-get install -y wget
+                  wget https://amazoncloudwatch-agent-ap-northeast-2.s3.ap-northeast-2.amazonaws.com/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+                  dpkg -i -E ./amazon-cloudwatch-agent.deb
+                  touch hello.txt
+                  cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<EOL
+                  {
+                    "logs": {
+                        "logs_collected": {
+                            "files": {
+                                "collect_list": [
+                                    {
+                                        "file_path": "/home/ubuntu/combined.log",
+                                        "log_group_name": "${instanceName}-group",
+                                        "log_stream_name": "${instanceName}-stream"
+                                    },
+                                    {
+                                        "file_path": "/home/ubuntu/error.log",
+                                        "log_group_name": "${instanceName}-group",
+                                        "log_stream_name": "${instanceName}-stream"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                  }
+                  EOL
+
+                  
+                  /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+                    
+                  chmod 644 /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+                  touch /var/log/user-data.log
+                  echo "User data script executed" >> /var/log/user-data.log
+  
+                  
+                  EOF
+    
+      tags = {
+        Name = "${instanceName}"
+      }
+    }
+    
+    output "${instanceName}_public_ip" {
+      value = aws_instance.${instanceName}.public_ip
+    }
+    
+    resource "aws_security_group" "${instanceName}_allow_ssh" {
+      name        = "${instanceName}_allow_ssh"
+      description = "Allow SSH inbound traffic"
+    
+      ingress {
+        from_port   = 22 
+        to_port     = 22
         protocol    = "tcp"
         cidr_blocks = ["0.0.0.0/0"]
+      }
+    
+      ingress {
+          from_port   = 8080 
+          to_port     = 8080
+          protocol    = "tcp"
+          cidr_blocks = ["0.0.0.0/0"]
+      }
+    
+      egress {
+        from_port   = 0
+        to_port     = 0
+        protocol    = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+      }
     }
-
-    egress {
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-}
-resource "aws_cloudwatch_log_group" "example_log_group" {
-  name              = "/aws/instance/example-log-group"
-  retention_in_days = 14
-}
-`;
-
+    `;
+    
             fs.writeFile(`terras/${instanceName}.tf`, config, (err) => {
                 if (err) {
                     reject(err);
@@ -148,6 +189,7 @@ resource "aws_cloudwatch_log_group" "example_log_group" {
     }
 
     executeSetupCommand(instanceIp: string, privateKeyPath: string): Promise<string> {
+        //this.sleep(30000);
          
         return new Promise((resolve, reject) => {
             const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "export DEBIAN_FRONTEND=noninteractive && sudo apt-get update && sudo apt-get install -y zip unzip && curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash - && sudo apt-get install -y nodejs && ls ~/"`;
@@ -374,7 +416,7 @@ resource "aws_cloudwatch_log_group" "example_log_group" {
         
         const ip = await this.executeTerraform(instanceName);
         
-        await this.sleep(30000);
+        await this.sleep(60000);
         
         await this.executeKeyModCommand(this.privateKeyPath);
         await this.executeSetupCommand(ip, this.privateKeyPath);

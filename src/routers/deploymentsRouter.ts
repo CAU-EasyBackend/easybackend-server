@@ -6,7 +6,9 @@ import wrapAsync from '../helpers/wrapFunction';
 import DeploymentsService from '../services/deploymentsService';
 import {isAuthenticated} from '../middlewares/passport-github';
 import mongoose from 'mongoose';
-import { getLogsForInstance } from '../services/logService';
+import { getLogEvents } from '../services/logService';
+import Instance, { IInstance } from '../models/Instance';
+import HttpError from '../helpers/httpError';
 const router = Router();
 
 /**
@@ -154,30 +156,38 @@ router.post('/:instanceId/terminate/instance', isAuthenticated, wrapAsync(async 
 
 /**
  * 특정 인스턴스의 로그 반환
- * get: /api/deployments/:instanceId/logs
- * params: instanceID
+ * GET: /api/deployments/:instanceId/logs
+ * params: instanceId
  */
 router.get('/:instanceId/logs', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
-
   const instanceId: string = req.params.instanceId;
 
- 
+  // 인스턴스 찾기
+  const instance: IInstance | null = await Instance.findOne({ _id: instanceId });
+  if (!instance) {
+    throw new HttpError(BaseResponseStatus.UNKNOWN_INSTANCE);
+  }
+
+  const logGroupName = `${instance.instanceName}-group`; 
+  const logStreamName = `${instance.instanceName}-stream`; 
+
   try {
-    const logGroupName = `/aws/instance/${instanceId}-log-group`;
-    const logs = await getLogsForInstance(logGroupName);
-    const responseStatus = BaseResponseStatus.SUCCESS;
-    return res.status(responseStatus.status).json(response(responseStatus, logs));
-  } catch (error) {
-    const responseStatus = BaseResponseStatus.LOG_FETCH_ERROR; // 적절한 오류 상태 설정
-    return res.status(responseStatus.status).json(response(responseStatus));
+    const logEvents = await getLogEvents(logGroupName, logStreamName);
+
+       
+    console.log('Fetched log events:', logEvents);
+
+    res.json(logEvents.map((event: AWS.CloudWatchLogs.OutputLogEvent) => ({
+      timestamp: event.timestamp ? new Date(event.timestamp).toISOString() : null,
+      message: event.message,
+    })));
+
+  
+  } catch (err) {
+    console.error('Error fetching logs:', err);
+    res.status(500).send('Error fetching logs');
   }
 }));
-
-
-
-
-
-
 
 
 
