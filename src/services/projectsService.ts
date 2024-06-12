@@ -42,11 +42,9 @@ class ProjectsService {
     };
   }
 
-  async saveApiSpec(userId: string, projectName: string, apiObject: OpenAPI.Document) {
-    await SwaggerParser.validate(apiObject);
-    console.log(apiObject);
+  async saveApiSpec(userId: string, projectName: string, apiObject: string) {
+    //await SwaggerParser.validate(apiObject);
     const yamlContent = yaml.dump(apiObject);
-    console.log(yamlContent);
 
     let apiSpec = await ApiSpec.findOne({ projectName, ownerUserId: userId });
     if(!apiSpec) {

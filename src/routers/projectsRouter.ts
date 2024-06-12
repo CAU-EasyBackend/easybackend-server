@@ -34,7 +34,7 @@ router.get('/:projectId/apiSpec', isAuthenticated, wrapAsync(async (req: Request
   const responseStatus = BaseResponseStatus.SUCCESS;
   const apiSpec = await ProjectsService.getApiSpec(userId, projectId);
 
-  return res.status(responseStatus.status).json(response(responseStatus, {api: apiSpec.apiObject}));
+  return res.status(responseStatus.status).json(response(responseStatus, {apiSpec: apiSpec.apiObject}));
 }));
 
 /**
@@ -60,7 +60,7 @@ router.get('/:projectId/apiSpec/yaml', isAuthenticated, wrapAsync(async (req: Re
 router.put('/apiSpec/save', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const projectName = req.body.projectName;
-  const apiObject: OpenAPI.Document = req.body.api;
+  const apiObject: string = req.body.api;
 
   const responseStatus = BaseResponseStatus.SUCCESS;
   await ProjectsService.saveApiSpec(userId, projectName, apiObject);
