@@ -45,7 +45,7 @@ class DeploymentsService {
 
     const newServer = new Server({
       instanceId: newInstance._id,
-      serverName: 'server',
+      serverName: path.parse(zipPath).name,
       runningVersion: 1,
       latestVersion: 1,
       port: 8080, 
@@ -230,39 +230,27 @@ class DeploymentsService {
   
   }
 
-  async versionUpdateServer(userId: string, instanceId: string, srcVersion: number,dstVersion: number, zipPath: string, frameworkType: string) {
+  async manageServerVersion(userId: string, instanceId: string, dstVersion: number, frameworkType: string) { //인스턴스에서 동작중인 서버 버전 바꾸기, 3->1, 1->3
     const instance: IInstance | null = await Instance.findOne({ _id: instanceId });
     if (!instance) {
       throw new HttpError(BaseResponseStatus.UNKNOWN_INSTANCE);
     } else if (instance.ownerUserId !== userId) {
       throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
     }
-    /*
 
     const server: IServer | null = await Server.findOne({ instanceId: instance._id });
     if (!server) {
       throw new HttpError(BaseResponseStatus.UNKNOWN_SERVER);
     }
 
-    const newServerVersion = new ServerVersion({
-      serverId: server._id,
-      version: server.latestVersion + 1,
-      port: 8080,
-    });
     
-    server.latestVersion = newServerVersion.version;
-    server.runningVersion = server.latestVersion;
-    */
-
-    // DeployService를 이용하여 서버 업데이트
+    
     await this.deployService.terminateBackCode(instance.IP); // 기존 코드 종료
-    await this.deployService.uploadBackCode(instance.IP, dstVersion, path.parse(zipPath).name, path.dirname(zipPath)); // 새 코드 업로드
-    await this.deployService.executeBackCode(instance.IP, dstVersion, path.parse(zipPath).name); // 새 코드 실행
+    await this.deployService.executeBackCode(instance.IP, dstVersion, server.serverName); // 새 코드 실행
 
     instance.status = 'running';
     await instance.save();
-    //await server.save();
-    //await newServerVersion.save();
+   
   }
 
 }

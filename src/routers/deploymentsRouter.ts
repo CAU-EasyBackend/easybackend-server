@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 import { getLogEvents } from '../services/logService';
 import Instance, { IInstance } from '../models/Instance';
 import HttpError from '../helpers/httpError';
+import moment from 'moment-timezone';
 const router = Router();
 
 /**
@@ -154,6 +155,7 @@ router.post('/:instanceId/terminate/instance', isAuthenticated, wrapAsync(async 
   return res.status(responseStatus.status).json(response(responseStatus, result));
 }));
 
+
 /**
  * 특정 인스턴스의 로그 반환
  * GET: /api/deployments/:instanceId/logs
@@ -174,21 +176,50 @@ router.get('/:instanceId/logs', isAuthenticated, wrapAsync(async (req: Request, 
   try {
     const logEvents = await getLogEvents(logGroupName, logStreamName);
 
-       
     console.log('Fetched log events:', logEvents);
 
-    res.json(logEvents.map((event: AWS.CloudWatchLogs.OutputLogEvent) => ({
-      timestamp: event.timestamp ? new Date(event.timestamp).toISOString() : null,
-      message: event.message,
-    })));
+    const kstLogMessages = logEvents.map((event: AWS.CloudWatchLogs.OutputLogEvent) => {
+      const timestamp = event.timestamp ? moment(event.timestamp).tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss') : '';
+      let message = event.message || '';
 
-  
+      // Parse the JSON message and remove the timestamp field
+      try {
+        const parsedMessage = JSON.parse(message);
+        delete parsedMessage.timestamp;
+        delete parsedMessage.service;
+        message = JSON.stringify(parsedMessage);
+      } catch (e) {
+        console.error('Error parsing log message:', e);
+      }
+
+      return `[${timestamp}] : ${message}`;
+    }).join('\n');
+
+    res.json({ message: kstLogMessages });
+
   } catch (err) {
     console.error('Error fetching logs:', err);
     res.status(500).send('Error fetching logs');
   }
 }));
 
+
+/**
+ *  백엔드 버전관리 api
+ *  post: /api/deployments/:instanceId/versionManage/:dstVersion
+ *  params: instanceID, dstVersion
+ */
+router.patch('/:instanceId/versionManage/:dstVersion', isAuthenticated, wrapAsync(async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const instanceId: string = req.params.instanceId
+  const dstVersion: string=req.params.dstVersion
+  const { repositoryURL, frameworkType } = req.body;
+
+  const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
+  const result = await DeploymentsService.manageServerVersion(userId,instanceId,Number(dstVersion),"Express");
+
+  return res.status(responseStatus.status).json(response(responseStatus, result));
+}));
 
 
 
