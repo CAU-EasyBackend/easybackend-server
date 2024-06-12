@@ -324,7 +324,7 @@ resource "aws_iam_instance_profile" "${instanceName}_profile" {
     executeClosePortCommand(instanceIp: string,privateKeyPath: string): Promise<string> {
          
         return new Promise((resolve, reject) => {
-            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "sudo lsof -t -i :8080 | xargs sudo kill -9"`;
+            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "sudo lsof -t -i :8080 | sudo xargs kill -9"`;
             exec(sshCommand, (error, stdout, stderr) => {
                 if (error) {
                     reject(error);

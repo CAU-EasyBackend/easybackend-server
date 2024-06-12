@@ -100,12 +100,23 @@ class DeploymentsService {
     });
     
     server.latestVersion = newServerVersion.version;
-    server.runningVersion = server.latestVersion;
+    
 
-    // DeployService를 이용하여 서버 업데이트
-    await this.deployService.terminateBackCode(instance.IP); // 기존 코드 종료
-    await this.deployService.uploadBackCode(instance.IP, newServerVersion.version, path.parse(zipPath).name, path.dirname(zipPath)); // 새 코드 업로드
-    await this.deployService.executeBackCode(instance.IP, newServerVersion.version, path.parse(zipPath).name); // 새 코드 실행
+    if(server.runningVersion==0) {
+      
+      await this.deployService.uploadBackCode(instance.IP, newServerVersion.version, path.parse(zipPath).name, path.dirname(zipPath)); // 새 코드 업로드
+      await this.deployService.executeBackCode(instance.IP, newServerVersion.version, path.parse(zipPath).name); // 새 코드 실행
+      
+    } else {
+      await this.deployService.terminateBackCode(instance.IP); // 기존 코드 종료
+      await this.deployService.uploadBackCode(instance.IP, newServerVersion.version, path.parse(zipPath).name, path.dirname(zipPath)); // 새 코드 업로드
+      await this.deployService.executeBackCode(instance.IP, newServerVersion.version, path.parse(zipPath).name); // 새 코드 실행
+  
+    }
+
+    server.runningVersion = server.latestVersion;
+    
+ 
 
     instance.status = 'running';
     await instance.save();
@@ -243,13 +254,26 @@ class DeploymentsService {
       throw new HttpError(BaseResponseStatus.UNKNOWN_SERVER);
     }
 
+   
+    
+
+    if(server.runningVersion==0) {
+      
+      await this.deployService.executeBackCode(instance.IP, dstVersion, server.serverName); // 새 코드 실행
+    } else {
+      
+      await this.deployService.terminateBackCode(instance.IP); // 기존 코드 종료
+      await this.deployService.executeBackCode(instance.IP, dstVersion, server.serverName); // 새 코드 실행
+    }
+    server.runningVersion=dstVersion;
+
     
     
-    await this.deployService.terminateBackCode(instance.IP); // 기존 코드 종료
-    await this.deployService.executeBackCode(instance.IP, dstVersion, server.serverName); // 새 코드 실행
+
 
     instance.status = 'running';
     await instance.save();
+    await server.save();
    
   }
 
