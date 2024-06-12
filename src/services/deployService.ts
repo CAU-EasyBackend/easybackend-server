@@ -357,21 +357,37 @@ resource "aws_iam_instance_profile" "${instanceName}_profile" {
             });
         });
     }
-    executeTerminateInstance(instanceName: string): Promise<void> {
+    async executeTerminateInstance(instanceName:String) {
+        
+        const resourceTargets = [
+          `aws_iam_role.${instanceName}_role`,
+          `aws_iam_role_policy_attachment.${instanceName}_role_attach`,
+          `aws_iam_instance_profile.${instanceName}_profile`,
+          `aws_cloudwatch_log_group.${instanceName}`,
+          `aws_cloudwatch_log_stream.${instanceName}`,
+          `aws_instance.${instanceName}`,
+          `aws_security_group.${instanceName}_allow_ssh`
+        ];
+    
+        
+        const targetsOption = resourceTargets.map(target => `-target=${target}`).join(' ');
+    
         return new Promise((resolve, reject) => {
-            exec(`cd terras && terraform destroy -auto-approve`, (error, stdout, stderr) => {
-                if (error) {
-                    reject(error);
-                    return;
-                }
-                if (stderr) {
-                    reject(new Error(stderr));
-                    return;
-                }
-                resolve();
-            });
+          const command = `cd terras && terraform destroy ${targetsOption} -auto-approve`;
+    
+          exec(command, (error, stdout, stderr) => {
+            if (error) {
+              reject(error);
+              return;
+            }
+            if (stderr) {
+              reject(new Error(stderr));
+              return;
+            }
+            resolve(stdout);
+          });
         });
-    }
+      }
     checkInstanceStatus(instanceIp: string, privateKeyPath: string): Promise<boolean> {
         return new Promise((resolve, reject) => {
             const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "echo 'Instance is up'"`;
@@ -416,7 +432,7 @@ resource "aws_iam_instance_profile" "${instanceName}_profile" {
         
         const ip = await this.executeTerraform(instanceName);
         
-        await this.sleep(60000);
+        await this.sleep(70000);
         
         await this.executeKeyModCommand(this.privateKeyPath);
         await this.executeSetupCommand(ip, this.privateKeyPath);
