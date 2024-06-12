@@ -1,6 +1,11 @@
 import ApiSpec, {IApiSpec} from '../models/ApiSpec';
 import {BaseResponseStatus} from '../helpers/baseResponseStatus';
 import HttpError from '../helpers/httpError';
+import SwaggerParser from '@apidevtools/swagger-parser';
+import path from 'path';
+import fs from 'fs';
+import { OpenAPI } from "openapi-types";
+import yaml from 'js-yaml';
 
 class ProjectsService {
   async getProjectList(userId: string) {
@@ -21,10 +26,36 @@ class ProjectsService {
       throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
     }
 
-    return apiSpec;
+    const yamlFileFolder = path.resolve(__dirname, '..', '..', 'temps', 'apiSpecs', userId);
+    if(!fs.existsSync(yamlFileFolder)) {
+      fs.mkdirSync(yamlFileFolder, { recursive: true });
+    }
+    const yamlFilePath = path.join(yamlFileFolder, `${apiSpec.projectName}.yaml`);
+    fs.writeFileSync(yamlFilePath, apiSpec.yamlContent, 'utf-8');
+
+    const apiObject = await SwaggerParser.parse(yamlFilePath);
+
+    return {
+      projectName: apiSpec.projectName,
+      yamlContent: apiSpec.yamlContent,
+      apiObject: apiObject,
+    };
   }
 
-  async saveApiSpec(userId: string, projectName: string, yamlContent: string) {
+  async saveApiSpec(userId: string, projectName: string, apiObject: string) {
+    //await SwaggerParser.validate(apiObject);
+    const yamlContent = yaml.dump(apiObject);
+
+    let apiSpec = await ApiSpec.findOne({ projectName, ownerUserId: userId });
+    if(!apiSpec) {
+      apiSpec = new ApiSpec({ projectName, ownerUserId: userId, yamlContent });
+    } else {
+      apiSpec.yamlContent = yamlContent;
+    }
+    await apiSpec.save();
+  }
+
+  async saveApiSpecYaml(userId: string, projectName: string, yamlContent: string) {
     let apiSpec = await ApiSpec.findOne({ projectName, ownerUserId: userId });
     if(!apiSpec) {
       apiSpec = new ApiSpec({ projectName, ownerUserId: userId, yamlContent });
