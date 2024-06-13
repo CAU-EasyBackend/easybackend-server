@@ -117,7 +117,7 @@ router.get('/:instanceId/status/server', isAuthenticated, wrapAsync(async (req: 
   const instanceId: string = req.params.instanceId
   
 
-  const responseStatus = BaseResponseStatus.DEPLOYMENT_SUCCESS;
+  const responseStatus = BaseResponseStatus.SUCCESS;
   const result = await DeploymentsService.checkServerAlive(userId,instanceId)
 
   return res.status(responseStatus.status).json(response(responseStatus, result));

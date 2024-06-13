@@ -192,7 +192,7 @@ resource "aws_iam_instance_profile" "${instanceName}_profile" {
         //this.sleep(30000);
          
         return new Promise((resolve, reject) => {
-            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "export DEBIAN_FRONTEND=noninteractive && sudo apt-get update && sudo apt-get install -y zip unzip && curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash - && sudo apt-get install -y nodejs && ls ~/"`;
+            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "export DEBIAN_FRONTEND=noninteractive && sudo apt-get update && sudo apt-get install -y zip unzip && curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash - && sudo apt-get install -y nodejs && ls ~/"`;
             exec(sshCommand, (error, stdout, stderr) => {
                 if (error) {
                     reject(error);
@@ -324,7 +324,11 @@ resource "aws_iam_instance_profile" "${instanceName}_profile" {
     executeClosePortCommand(instanceIp: string,privateKeyPath: string): Promise<string> {
          
         return new Promise((resolve, reject) => {
-            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "sudo lsof -t -i :8080 | sudo xargs kill -9"`;
+            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "sudo lsof -t -i :8080 | sudo xargs -r sudo kill -9"`;
+
+ 
+
+
             exec(sshCommand, (error, stdout, stderr) => {
                 if (error) {
                     reject(error);
@@ -357,37 +361,39 @@ resource "aws_iam_instance_profile" "${instanceName}_profile" {
             });
         });
     }
-    async executeTerminateInstance(instanceName:String) {
+    async executeTerminateInstance(instanceName: String) {
         
         const resourceTargets = [
-          `aws_iam_role.${instanceName}_role`,
-          `aws_iam_role_policy_attachment.${instanceName}_role_attach`,
-          `aws_iam_instance_profile.${instanceName}_profile`,
-          `aws_cloudwatch_log_group.${instanceName}`,
-          `aws_cloudwatch_log_stream.${instanceName}`,
-          `aws_instance.${instanceName}`,
-          `aws_security_group.${instanceName}_allow_ssh`
+            `aws_iam_role.${instanceName}_role`,
+            `aws_iam_role_policy_attachment.${instanceName}_role_attach`,
+            `aws_iam_instance_profile.${instanceName}_profile`,
+            `aws_cloudwatch_log_group.${instanceName}`,
+            `aws_cloudwatch_log_stream.${instanceName}`,
+            `aws_instance.${instanceName}`,
+            `aws_security_group.${instanceName}_allow_ssh`,
+           // `aws_key_pair.cicd_make_keypair`,
+          //  `local_file.cicd_downloads_key`,s
+          //  `tls_private_key.cicd_make_key`
         ];
     
-        
         const targetsOption = resourceTargets.map(target => `-target=${target}`).join(' ');
     
         return new Promise((resolve, reject) => {
-          const command = `cd terras && terraform destroy ${targetsOption} -auto-approve`;
+            const command = `cd terras && terraform destroy ${targetsOption} -auto-approve`;
     
-          exec(command, (error, stdout, stderr) => {
-            if (error) {
-              reject(error);
-              return;
-            }
-            if (stderr) {
-              reject(new Error(stderr));
-              return;
-            }
-            resolve(stdout);
-          });
+            exec(command, (error, stdout, stderr) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+                if (stderr) {
+                    reject(new Error(stderr));
+                    return;
+                }
+                resolve(stdout);
+            });
         });
-      }
+    }
     checkInstanceStatus(instanceIp: string, privateKeyPath: string): Promise<boolean> {
         return new Promise((resolve, reject) => {
             const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "echo 'Instance is up'"`;
@@ -396,7 +402,8 @@ resource "aws_iam_instance_profile" "${instanceName}_profile" {
                     if (stderr && stderr.includes('Connection refused')) {
                         resolve(false);
                     } else {
-                        reject(error);
+                      //  reject(error);
+                      resolve(false);
                     }
                     return;
                 }
@@ -406,17 +413,22 @@ resource "aws_iam_instance_profile" "${instanceName}_profile" {
     }
     checkServerStatus(instanceIp: string, privateKeyPath: string): Promise<boolean> {
         return new Promise((resolve, reject) => {
-            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "curl -s http://localhost:8080"`;
+            const sshCommand = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no ubuntu@${instanceIp} "lsof -i :8080"`;
             exec(sshCommand, (error, stdout, stderr) => {
                 if (error) {
-                    if (stderr && stderr.includes('Connection refused')) {
+                    console.error(`Error: ${error.message}`);
+                    console.error(`Stderr: ${stderr}`);
+
+                    resolve(false);
+    
+                } else {
+                    // stdout이 비어있으면 포트 8080에서 프로세스가 실행 중이 아님
+                    if (stdout.trim() === '') {
                         resolve(false);
                     } else {
-                        reject(error);
+                        resolve(true); // 포트 8080에서 서버가 실행 중임
                     }
-                    return;
                 }
-                resolve(true);
             });
         });
     }
@@ -458,6 +470,17 @@ resource "aws_iam_instance_profile" "${instanceName}_profile" {
     }
     async terminateInstance(instanceName: string): Promise<void> {
         await this.executeTerminateInstance(instanceName);
+        
+        let baseDir = path.join(__dirname, '../../terras');
+        const filePath = path.join(baseDir, `${instanceName}.tf`);
+        try {
+          fs.unlinkSync(filePath);
+          console.log(`File ${instanceName}.tf deleted successfully`);
+        } catch (error) {
+          console.error(`Failed to delete file ${instanceName}.tf:`, error);
+          throw error;
+        }
+
     }
 
     async getInstanceStatus(ip: string): Promise<boolean> {

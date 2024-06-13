@@ -62,6 +62,8 @@ router.put('/apiSpec/save', isAuthenticated, wrapAsync(async (req: Request, res:
   const projectName = req.body.projectName;
   const apiObject: string = req.body.api;
 
+  console.log("sdf",projectName)
+
   const responseStatus = BaseResponseStatus.SUCCESS;
   await ProjectsService.saveApiSpec(userId, projectName, apiObject);
 
@@ -74,6 +76,7 @@ router.put('/apiSpec/save', isAuthenticated, wrapAsync(async (req: Request, res:
  * body: projectName
  */
 router.put('/apiSpec/save/yaml', isAuthenticated, upload.single('yamlFile'), wrapAsync(async (req: Request, res: Response) => {
+  
   if(!req.file) {
     const responseStatus = BaseResponseStatus.YAML_UPLOAD_ERROR;
     return res.status(responseStatus.status).json(response(responseStatus));
@@ -81,6 +84,7 @@ router.put('/apiSpec/save/yaml', isAuthenticated, upload.single('yamlFile'), wra
 
   const userId = req.user!.userId;
   const projectName = req.body.projectName;
+  
 
   const yamlFilePath = req.file.path;
   const yamlContent = fs.readFileSync(yamlFilePath, 'utf-8');

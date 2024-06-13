@@ -102,7 +102,7 @@ class DeploymentsService {
     server.latestVersion = newServerVersion.version;
     
 
-    if(server.runningVersion==0) {
+    if(!await this.deployService.checkServerStatus) { //서버가 죽어있다면, 코드 업로드 후 실행
       
       await this.deployService.uploadBackCode(instance.IP, newServerVersion.version, path.parse(zipPath).name, path.dirname(zipPath)); // 새 코드 업로드
       await this.deployService.executeBackCode(instance.IP, newServerVersion.version, path.parse(zipPath).name); // 새 코드 실행
@@ -170,7 +170,7 @@ class DeploymentsService {
       throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
     }
 
-    await this.deployService.getServerStatus(instance.IP)
+    return await this.deployService.getServerStatus(instance.IP)
 
     
   }
@@ -183,7 +183,7 @@ class DeploymentsService {
       throw new HttpError(BaseResponseStatus.FORBIDDEN_USER);
     }
 
-    await this.deployService.getInstanceStatus(instance.IP)
+    return await this.deployService.getInstanceStatus(instance.IP)
   }
 
   async shutdownServer(userId: string, instanceId: string) { //배포한 백엔드 서버 끄기
@@ -200,15 +200,6 @@ class DeploymentsService {
     if(!currentServer) {
       throw new HttpError(BaseResponseStatus.UNKNOWN_SERVER);
     } 
-
-    //러닝버전 관리나 DB에서의 제거가 필요할수도 있음
-
-   
-
-    //1. 서버의 러닝버전 바꾸기
-    currentServer.runningVersion=0
-  
-    
     await this.deployService.terminateBackCode(instance.IP); // 기존 코드 종료
 
     await instance.save()
@@ -253,23 +244,28 @@ class DeploymentsService {
     if (!server) {
       throw new HttpError(BaseResponseStatus.UNKNOWN_SERVER);
     }
-
-   
-    
-
-    if(server.runningVersion==0) {
+    try {
+      let serverStat = await this.deployService.getServerStatus(instance.IP);
       
-      await this.deployService.executeBackCode(instance.IP, dstVersion, server.serverName); // 새 코드 실행
-    } else {
+  
+      if (serverStat === false) {
+          // 서버가 꺼져있으면 새 코드를 실행.
+          console.log("hihi\n\n\n\n\n\n\n\n")
+          
+          await this.deployService.executeBackCode(instance.IP, dstVersion, server.serverName);
+      } else {
+          // 서버가 실행 중일경우 기존 코드를 종료하고 새 코드를 실행.
+          console.log("hihasdsadasdi\n\n\n\n\n\n\n\n")
+          
+          await this.deployService.terminateBackCode(instance.IP);
+          await this.deployService.executeBackCode(instance.IP, dstVersion, server.serverName);
+      }
+  } catch (error) {
+    console.log("hihsadafqfqwwqewqewqewqewqewqeqweqwei\n\n\n\n\n\n\n\n")
+      console.error("Error checking server status or executing code:\n\n", error);
       
-      await this.deployService.terminateBackCode(instance.IP); // 기존 코드 종료
-      await this.deployService.executeBackCode(instance.IP, dstVersion, server.serverName); // 새 코드 실행
-    }
+  }
     server.runningVersion=dstVersion;
-
-    
-    
-
 
     instance.status = 'running';
     await instance.save();
