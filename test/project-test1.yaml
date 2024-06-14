@@ -1,0 +1,29 @@
+openapi: 3.0.0
+info:
+  title: Echo API
+  version: 1.0.0
+  description: A simple API to echo a text response
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /echo:
+    get:
+      summary: Echo a text response
+      description: Returns a simple text response "ver.1"
+      parameters:
+        - in: header
+          name: Accept
+          required: true
+          schema:
+            type: string
+            default: text/plain
+      responses:
+        '200':
+          description: Successful response
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: ver.1
